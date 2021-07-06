@@ -3,24 +3,25 @@
 import {
   WebGraph,
   Utils,
-  Layout,
-  DEFAULT_FORCEATLAS2_ITERATIONS,
   AppMode,
   NodeType,
   LabelSelector,
-} from "../src/index";
-import { SerializedEdge, SerializedNode } from "graphology-types";
-import Graph, { MultiGraph } from "graphology";
+} from '../src/index';
+import { SerializedEdge, SerializedNode } from 'graphology-types';
+import Graph, { MultiGraph } from 'graphology';
+import { circlepack, circular, random } from 'graphology-layout';
+import forceAtlas2, { ForceAtlas2LayoutOptions } from 'graphology-layout-forceatlas2';
+import FA2LayoutSupervisor from 'graphology-layout-forceatlas2/worker';
 
 /**---------------------------------------------------------------------------
  * Graph drawing
  *--------------------------------------------------------------------------*/
 let webGraph: WebGraph | undefined = undefined;
 let graph: Graph | undefined = undefined;
-const webGraphContainer = document.getElementById("webGraph");
-const webGraphContextMenuContainer = document.getElementById("webGraphCM");
-const webGraphNodeInfoBox = document.getElementById("webGraphNIB");
-const status = document.getElementById("status");
+const webGraphContainer = document.getElementById('webGraph');
+const webGraphContextMenuContainer = document.getElementById('webGraphCM');
+const webGraphNodeInfoBox = document.getElementById('webGraphNIB');
+const status = document.getElementById('status');
 
 async function drawFullGraph(graphDataJSON: any[]) {
   if (!webGraphContainer) {
@@ -42,12 +43,12 @@ async function drawFullGraph(graphDataJSON: any[]) {
   graph = new MultiGraph();
 
   const COLOR_PALETTE = [
-    "#EDAE49",
-    "#D1495B",
-    "#00798C",
-    "#30638E",
-    "#003D5B",
-    "#BBBDF6",
+    '#EDAE49',
+    '#D1495B',
+    '#00798C',
+    '#30638E',
+    '#003D5B',
+    '#BBBDF6',
   ];
 
   let minScore = Infinity;
@@ -65,7 +66,7 @@ async function drawFullGraph(graphDataJSON: any[]) {
   // create nodes
   graphDataJSON.forEach((result) => {
     graph?.addNode(result.id, {
-      label: result.author + ", " + result.year,
+      label: result.author + ', ' + result.year,
       size: Utils.getNodeSizeForValue(result.score, minScore, maxScore, 4),
       category: result.category,
       color: Utils.getNodeColorForValue(
@@ -85,8 +86,8 @@ async function drawFullGraph(graphDataJSON: any[]) {
     if (result.cluster !== undefined) {
       result.refs.forEach((ref: string) => {
         graph?.addEdge(result.id, ref, {
-          weight: 0.1,
-          color: "#ccc",
+          weight: 1,
+          color: '#ccc',
           important: Math.random() > 0.7,
         });
       });
@@ -94,54 +95,43 @@ async function drawFullGraph(graphDataJSON: any[]) {
   });
 
   if (webGraph?.isRenderingActive) webGraph.destroy();
+  
+  random.assign(graph);
 
   // initialize and render graph
   webGraph = new WebGraph(webGraphContainer, graph, {
-    layout: Layout.FORCEATLAS2,
-    initializeForceAtlas2WebWorker: true,
-    layoutConfiguration: {
-      forceAtlas2LayoutOptions: {
-        iterations: DEFAULT_FORCEATLAS2_ITERATIONS,
-        initialWebWorkerRuntime: undefined,
-        preAppliedLayout: Layout.CIRCULAR,
-        settings: {
-          edgeWeightInfluence: 2.0,
-          barnesHutOptimize: true,
-        },
-      },
-    },
     appMode: AppMode.DYNAMIC,
     nodeInfoBox: {
       container: webGraphNodeInfoBox,
-      cssShow: "show-hover",
-      cssHide: "hide",
+      cssShow: 'show-hover',
+      cssHide: 'hide',
       xoffset: -75,
       yoffset: 20,
       callback: {
         0: async (key: string, score?: number) => {
           const dataJson: any = await fetch(
-            "http://localhost:9002/node?q=" + key
+            'http://localhost:9002/node?q=' + key
           )
             .then((response) => response.json())
             .then((json) => json);
 
-          if (!dataJson) return { header: "error" };
+          if (!dataJson) return { header: 'error' };
 
           return {
             preheader: dataJson.year,
             header: dataJson.title,
             content: dataJson.abstract,
-            footer: "Score: " + score,
+            footer: 'Score: ' + score,
           };
         },
         1: async (key: string) => {
           const dataJson: any = await fetch(
-            "http://localhost:9002/node?q=" + key
+            'http://localhost:9002/node?q=' + key
           )
             .then((response) => response.json())
             .then((json) => json);
 
-          if (!dataJson) return { header: "error" };
+          if (!dataJson) return { header: 'error' };
 
           return {
             preheader: dataJson.year,
@@ -153,54 +143,54 @@ async function drawFullGraph(graphDataJSON: any[]) {
     },
     contextMenus: {
       container: webGraphContextMenuContainer,
-      cssHide: "hide",
-      cssShow: "show",
+      cssHide: 'hide',
+      cssShow: 'show',
       entries: {
         0: [
           {
-            label: "drop node",
+            label: 'drop node',
             callback: (key: string) => webGraph?.dropNodes([key]),
           },
           {
-            label: "type triangle",
+            label: 'type triangle',
             callback: (key: string) =>
               webGraph?.mergeNodes([
                 { key: key, attributes: { type: NodeType.TRIANGLE } },
               ]),
           },
           {
-            label: "type rectangle",
+            label: 'type rectangle',
             callback: (key: string) =>
               webGraph?.mergeNodes([
                 { key: key, attributes: { type: NodeType.RECTANGLE } },
               ]),
           },
           {
-            label: "highlight node",
+            label: 'highlight node',
             callback: (key: string) => webGraph?.highlightNode(key, 2000),
           },
         ],
         1: [
           {
-            label: "drop node",
+            label: 'drop node',
             callback: (key: string) => webGraph?.dropNodes([key]),
           },
           {
-            label: "hide node",
+            label: 'hide node',
             callback: (key: string) =>
               webGraph?.mergeNodes([
                 { key: key, attributes: { hidden: true } },
               ]),
           },
           {
-            label: "show node",
+            label: 'show node',
             callback: (key: string) =>
               webGraph?.mergeNodes([
                 { key: key, attributes: { hidden: false } },
               ]),
           },
           {
-            label: "highlight node",
+            label: 'highlight node',
             callback: (key: string) => webGraph?.highlightNode(key, 2000),
           },
         ],
@@ -212,48 +202,44 @@ async function drawFullGraph(graphDataJSON: any[]) {
     highlightSubGraphOnHover: true,
     includeImportantNeighbors: true,
     importantNeighborsBidirectional: true,
-    importantNeighborsColor: "#fcabb2",
+    importantNeighborsColor: '#fcabb2',
     enableHistory: true,
     labelSelector: LabelSelector.SIGMA,
     sigmaSettings: {
       renderLabels: true,
-      labelFontColor: "#8e8e8e",
+      labelFontColor: '#8e8e8e',
       renderNodeBackdrop: true,
-      clusterColors: { 0: "#d1fce9", 1: "#d1dcfc", 2: "#fcd4cc", 3: "#fafcbd" },
+      clusterColors: { 0: '#d1fce9', 1: '#d1dcfc', 2: '#fcd4cc', 3: '#fafcbd' },
     },
   });
 
-  webGraph.on("rendered", () => console.log("graph rendered"));
-  webGraph.on("syncLayoutCompleted", () => console.log("syncLayoutCompleted"));
-  webGraph.on("initialFA2wwStarted", () => console.log("initialFA2wwStarted"));
-  webGraph.on("initialFA2wwCompleted", () =>
-    console.log("initialFA2wwCompleted")
-  );
+  webGraph.on('rendered', () => console.log('graph rendered'));
+  webGraph.on('syncLayoutCompleted', () => console.log('syncLayoutCompleted'));
 
-  webGraph.on("clickNode", (e) => console.log("clickNode: ", e));
-  webGraph.on("rightClickNode", (e) => console.log("rightClickNode: ", e));
-  webGraph.on("dragNode", (e) => console.log("dragNode: ", e));
-  webGraph.on("draggedNode", (e) => console.log("draggedNode: ", e));
-  webGraph.on("enterNode", (e) => console.log("enterNode: ", e));
-  webGraph.on("leaveNode", (e) => console.log("leaveNode: ", e));
+  webGraph.on('clickNode', (e) => console.log('clickNode: ', e));
+  webGraph.on('rightClickNode', (e) => console.log('rightClickNode: ', e));
+  webGraph.on('dragNode', (e) => console.log('dragNode: ', e));
+  webGraph.on('draggedNode', (e) => console.log('draggedNode: ', e));
+  webGraph.on('enterNode', (e) => console.log('enterNode: ', e));
+  webGraph.on('leaveNode', (e) => console.log('leaveNode: ', e));
 
-  webGraph.on("nodeInfoBoxOpened", (e) =>
-    console.log("nodeInfoBoxOpened: ", e)
+  webGraph.on('nodeInfoBoxOpened', (e) =>
+    console.log('nodeInfoBoxOpened: ', e)
   );
-  webGraph.on("nodeInfoBoxClosed", (e) =>
-    console.log("nodeInfoBoxClosed: ", e)
+  webGraph.on('nodeInfoBoxClosed', (e) =>
+    console.log('nodeInfoBoxClosed: ', e)
   );
-  webGraph.on("contextMenuOpened", (e) =>
-    console.log("contextMenuOpened: ", e)
+  webGraph.on('contextMenuOpened', (e) =>
+    console.log('contextMenuOpened: ', e)
   );
-  webGraph.on("contextMenuClosed", (e) =>
-    console.log("contextMenuClosed: ", e)
+  webGraph.on('contextMenuClosed', (e) =>
+    console.log('contextMenuClosed: ', e)
   );
 
   webGraph.render();
 
   if (status) {
-    status.innerHTML = "Idle";
+    status.innerHTML = 'Idle';
   }
 }
 
@@ -280,10 +266,10 @@ function drawGraph(json: any[], baseUrl: string): void {
 
   json.forEach((result) => {
     graph?.addNode(result.id, {
-      label: result.author + ", " + result.year,
+      label: result.author + ', ' + result.year,
       size: 10,
       category: 0,
-      color: "#30638E",
+      color: '#30638E',
       score: result.score,
       important: result.important,
     });
@@ -291,20 +277,20 @@ function drawGraph(json: any[], baseUrl: string): void {
 
   const contextMenus = {
     container: webGraphContextMenuContainer,
-    cssHide: "hide",
-    cssShow: "show",
+    cssHide: 'hide',
+    cssShow: 'show',
     entries: {
       0: [
         {
-          label: "Load 1 Node",
+          label: 'Load 1 Node',
           callback: (key: string) => loadNNodes(1, key, baseUrl),
         },
         {
-          label: "Load 5 Nodes",
+          label: 'Load 5 Nodes',
           callback: (key: string) => loadNNodes(5, key, baseUrl),
         },
         {
-          label: "Load 10 Nodes",
+          label: 'Load 10 Nodes',
           callback: (key: string) => loadNNodes(10, key, baseUrl),
         },
       ],
@@ -312,19 +298,6 @@ function drawGraph(json: any[], baseUrl: string): void {
   };
 
   webGraph = new WebGraph(webGraphContainer, graph, {
-    layout: Layout.CIRCLEPACK,
-    layoutConfiguration: {
-      forceAtlas2LayoutOptions: {
-        iterations: 0,
-        initialWebWorkerRuntime: 100,
-        preAppliedLayout: Layout.CIRCULAR,
-        settings: {
-          edgeWeightInfluence: 2.0,
-          barnesHutOptimize: true,
-        },
-      },
-    },
-    initializeForceAtlas2WebWorker: true,
     contextMenus: contextMenus,
   });
 
@@ -347,11 +320,11 @@ function loadNNodes(n: number, key: string, url: string): void {
       newNodes.push({
         key: newID,
         attributes: {
-          label: node.author + ", " + node.year,
+          label: node.author + ', ' + node.year,
           x: nodeData.x + Math.cos(angle) / 10,
           y: nodeData.y + Math.sin(angle) / 10,
           category: 0,
-          color: "#30638E",
+          color: '#30638E',
           size: 10,
         },
       });
@@ -360,7 +333,7 @@ function loadNNodes(n: number, key: string, url: string): void {
         source: key,
         target: newID,
         attributes: {
-          color: "#e5e5e5",
+          color: '#e5e5e5',
           weight: 1.0,
         },
       });
@@ -369,9 +342,7 @@ function loadNNodes(n: number, key: string, url: string): void {
     webGraph?.mergeNodes(newNodes);
     webGraph?.mergeEdges(newEdges);
 
-    webGraph?.startForceAtlas2WebWorker();
-
-    setTimeout(() => webGraph?.stopForceAtlas2WebWorker(), 500);
+    webGraph?.setAndApplyLayout(circlepack);
   });
 }
 
@@ -382,38 +353,38 @@ function drawExampleGraph() {
 
   graph = new Graph();
 
-  graph.addNode("Node 1", {
-    label: "Hello",
+  graph.addNode('Node 1', {
+    label: 'Hello',
     x: 1,
     y: 1,
-    color: "#D1495B",
+    color: '#D1495B',
     size: 10,
     type: NodeType.RECTANGLE,
   });
 
-  graph.addNode("Node 2", {
-    label: "Graph",
+  graph.addNode('Node 2', {
+    label: 'Graph',
     x: 1,
     y: 0,
-    color: "#EDAE49",
+    color: '#EDAE49',
     size: 10,
     type: NodeType.TRIANGLE,
   });
 
-  graph.addNode("Node 3", {
-    label: "and World!",
+  graph.addNode('Node 3', {
+    label: 'and World!',
     x: 0,
     y: 0,
-    color: "#30638E",
+    color: '#30638E',
     size: 10,
   });
 
-  graph.addEdge("Node 1", "Node 2", {
+  graph.addEdge('Node 1', 'Node 2', {
     weight: 0.5,
-    color: "#ccc",
+    color: '#ccc',
     important: true,
   });
-  graph.addEdge("Node 1", "Node 3", { weight: 1.0, color: "#ccc" });
+  graph.addEdge('Node 1', 'Node 3', { weight: 1.0, color: '#ccc' });
 
   if (webGraph?.isRenderingActive) webGraph.destroy();
 
@@ -422,7 +393,7 @@ function drawExampleGraph() {
   webGraph.render();
 
   if (status) {
-    status.innerHTML = "Idle";
+    status.innerHTML = 'Idle';
   }
 }
 
@@ -430,7 +401,7 @@ window.onload = () => {
   if (webGraphContainer === null) return;
 
   if (status) {
-    status.innerHTML = "Working...";
+    status.innerHTML = 'Working...';
   }
   // render default graph example
   drawExampleGraph();
@@ -444,7 +415,7 @@ function fetchGraphData(url: string): Promise<any[]> {
       console.error(e);
       drawExampleGraph();
       if (status) {
-        status.innerHTML = "Idle";
+        status.innerHTML = 'Idle';
       }
     });
 }
@@ -455,12 +426,12 @@ function fetchGraphData(url: string): Promise<any[]> {
 /**---------------------------------
  * Settings Menu - API endpoint
  *--------------------------------*/
-document.getElementById("graphButton")?.addEventListener("click", async (e) => {
+document.getElementById('graphButton')?.addEventListener('click', async (e) => {
   e.preventDefault();
 
-  const searchEndpointElement = document.getElementById("searchEndpoint");
-  const searchGraphRoute = document.getElementById("graphRoute");
-  const searchGraphQuery = document.getElementById("graphQuery");
+  const searchEndpointElement = document.getElementById('searchEndpoint');
+  const searchGraphRoute = document.getElementById('graphRoute');
+  const searchGraphQuery = document.getElementById('graphQuery');
 
   if (!searchEndpointElement || !searchGraphRoute || !searchGraphQuery) return;
 
@@ -471,7 +442,7 @@ document.getElementById("graphButton")?.addEventListener("click", async (e) => {
     encodeURIComponent((<HTMLInputElement>searchGraphQuery).value);
 
   if (status) {
-    status.innerHTML = "Working...";
+    status.innerHTML = 'Working...';
   }
 
   fetchGraphData(url).then((json) => drawFullGraph(json));
@@ -481,12 +452,12 @@ document.getElementById("graphButton")?.addEventListener("click", async (e) => {
  * Settings Menu - Start blank
  *--------------------------------*/
 
-document.getElementById("blankButton")?.addEventListener("click", async (e) => {
+document.getElementById('blankButton')?.addEventListener('click', async (e) => {
   e.preventDefault();
 
-  const searchEndpointElement = document.getElementById("searchEndpoint");
-  const blankRoute = document.getElementById("blankRoute");
-  const blankAmount = document.getElementById("blankAmount");
+  const searchEndpointElement = document.getElementById('searchEndpoint');
+  const blankRoute = document.getElementById('blankRoute');
+  const blankAmount = document.getElementById('blankAmount');
 
   if (!blankAmount || !blankRoute || !searchEndpointElement) return;
 
@@ -503,7 +474,7 @@ document.getElementById("blankButton")?.addEventListener("click", async (e) => {
 /**---------------------------------
  * Settings Menu - App Mode
  *--------------------------------*/
-document.getElementById("appModeDynamic")?.addEventListener("click", (e) => {
+document.getElementById('appModeDynamic')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -511,7 +482,7 @@ document.getElementById("appModeDynamic")?.addEventListener("click", (e) => {
   webGraph.appMode = AppMode.DYNAMIC;
 });
 
-document.getElementById("appModeStatic")?.addEventListener("click", (e) => {
+document.getElementById('appModeStatic')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -522,92 +493,68 @@ document.getElementById("appModeStatic")?.addEventListener("click", (e) => {
 /**---------------------------------
  * Settings Menu - Layout
  *--------------------------------*/
-document.getElementById("layoutRandom")?.addEventListener("click", (e) => {
+document.getElementById('layoutRandom')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
 
-  webGraph.setAndApplyLayout(Layout.RANDOM, {});
+  webGraph.setAndApplyLayout(random);
 });
 
-document.getElementById("layoutCircular")?.addEventListener("click", (e) => {
+document.getElementById('layoutCircular')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
 
-  webGraph.setAndApplyLayout(Layout.CIRCULAR, {});
+  webGraph.setAndApplyLayout(circular);
 });
 
-document.getElementById("layoutCirclePack")?.addEventListener("click", (e) => {
+document.getElementById('layoutCirclePack')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
 
-  webGraph.setAndApplyLayout(Layout.CIRCLEPACK, {});
+  webGraph.setAndApplyLayout(circlepack);
 });
 
-document.getElementById("layoutForceAtlas2")?.addEventListener("click", (e) => {
+document.getElementById('layoutForceAtlas2')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
 
-  webGraph.setAndApplyLayout(Layout.FORCEATLAS2, {
-    forceAtlas2LayoutOptions: {
-      iterations: 25,
-      settings: {
-        edgeWeightInfluence: 2.0,
-      },
+  webGraph.setAndApplyLayout(forceAtlas2, {
+    iterations: 25,
+    settings: {
+      edgeWeightInfluence: 2.0,
     },
   });
-});
-
-document.getElementById("layoutReapply")?.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  if (!webGraph || !webGraph.isRenderingActive) return;
-
-  webGraph.reapplyLayout();
 });
 
 /**---------------------------------
  * Settings Menu - ForceAtlas2 Web Worker
  *--------------------------------*/
-document.getElementById("wwStart")?.addEventListener("click", (e) => {
+const fa2ww = (graph: Graph, options?: { interval: number, options: ForceAtlas2LayoutOptions }) => {
+  const layout = new FA2LayoutSupervisor(graph, options?.options);
+  
+  layout.start();
+  
+  setTimeout(() => layout.stop(), options?.interval);
+};
+
+fa2ww.assign = fa2ww;
+
+document.getElementById('ww')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
 
-  webGraph.startForceAtlas2WebWorker();
-});
-
-document.getElementById("wwStop")?.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  if (!webGraph || !webGraph.isRenderingActive) return;
-
-  webGraph.stopForceAtlas2WebWorker();
-});
-
-document.getElementById("wwToggle")?.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  if (!webGraph || !webGraph.isRenderingActive) return;
-
-  webGraph.toggleForceAtlas2WebWorker();
-});
-
-document.getElementById("wwReset")?.addEventListener("click", (e) => {
-  e.preventDefault();
-
-  if (!webGraph || !webGraph.isRenderingActive) return;
-
-  webGraph.setAndApplyLayout(Layout.CIRCLEPACK, {});
+  webGraph.setAndApplyLayout(fa2ww, { interval: 1000 })
 });
 
 /**---------------------------------
  * Settings Menu - Edges
  *--------------------------------*/
-document.getElementById("edgeShow")?.addEventListener("click", (e) => {
+document.getElementById('edgeShow')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -615,7 +562,7 @@ document.getElementById("edgeShow")?.addEventListener("click", (e) => {
   webGraph.toggleEdgeRendering(false);
 });
 
-document.getElementById("edgeHide")?.addEventListener("click", (e) => {
+document.getElementById('edgeHide')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -623,7 +570,7 @@ document.getElementById("edgeHide")?.addEventListener("click", (e) => {
   webGraph.toggleEdgeRendering(true);
 });
 
-document.getElementById("toggleEdges")?.addEventListener("click", (e) => {
+document.getElementById('toggleEdges')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -634,7 +581,7 @@ document.getElementById("toggleEdges")?.addEventListener("click", (e) => {
 /**---------------------------------
  * Settings Menu - Important Edges
  *--------------------------------*/
-document.getElementById("impEdgeShow")?.addEventListener("click", (e) => {
+document.getElementById('impEdgeShow')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -642,7 +589,7 @@ document.getElementById("impEdgeShow")?.addEventListener("click", (e) => {
   webGraph.toggleJustImportantEdgeRendering(true);
 });
 
-document.getElementById("impEdgeHide")?.addEventListener("click", (e) => {
+document.getElementById('impEdgeHide')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -651,8 +598,8 @@ document.getElementById("impEdgeHide")?.addEventListener("click", (e) => {
 });
 
 document
-  .getElementById("toggleImportantEdges")
-  ?.addEventListener("click", (e) => {
+  .getElementById('toggleImportantEdges')
+  ?.addEventListener('click', (e) => {
     e.preventDefault();
 
     if (!webGraph || !webGraph.isRenderingActive) return;
@@ -663,7 +610,7 @@ document
 /**---------------------------------
  * Settings Menu - Default Node Type
  *--------------------------------*/
-document.getElementById("typeRing")?.addEventListener("click", (e) => {
+document.getElementById('typeRing')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -671,7 +618,7 @@ document.getElementById("typeRing")?.addEventListener("click", (e) => {
   webGraph.setAndApplyDefaultNodeType(NodeType.RING);
 });
 
-document.getElementById("typeCircle")?.addEventListener("click", (e) => {
+document.getElementById('typeCircle')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -679,7 +626,7 @@ document.getElementById("typeCircle")?.addEventListener("click", (e) => {
   webGraph.setAndApplyDefaultNodeType(NodeType.CIRCLE);
 });
 
-document.getElementById("typeRectangle")?.addEventListener("click", (e) => {
+document.getElementById('typeRectangle')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -687,7 +634,7 @@ document.getElementById("typeRectangle")?.addEventListener("click", (e) => {
   webGraph.setAndApplyDefaultNodeType(NodeType.RECTANGLE);
 });
 
-document.getElementById("typeTriangle")?.addEventListener("click", (e) => {
+document.getElementById('typeTriangle')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -698,7 +645,7 @@ document.getElementById("typeTriangle")?.addEventListener("click", (e) => {
 /**---------------------------------
  * Settings Menu - History
  *--------------------------------*/
-document.getElementById("undo")?.addEventListener("click", (e) => {
+document.getElementById('undo')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -706,7 +653,7 @@ document.getElementById("undo")?.addEventListener("click", (e) => {
   webGraph.undo();
 });
 
-document.getElementById("redo")?.addEventListener("click", (e) => {
+document.getElementById('redo')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -714,7 +661,7 @@ document.getElementById("redo")?.addEventListener("click", (e) => {
   webGraph.redo();
 });
 
-document.getElementById("clearHistory")?.addEventListener("click", (e) => {
+document.getElementById('clearHistory')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -725,7 +672,7 @@ document.getElementById("clearHistory")?.addEventListener("click", (e) => {
 /**---------------------------------
  * Settings Menu - Camera
  *--------------------------------*/
-document.getElementById("zoomIn")?.addEventListener("click", (e) => {
+document.getElementById('zoomIn')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -733,7 +680,7 @@ document.getElementById("zoomIn")?.addEventListener("click", (e) => {
   webGraph.camera.animatedUnzoom(0.75);
 });
 
-document.getElementById("zoomOut")?.addEventListener("click", (e) => {
+document.getElementById('zoomOut')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -741,7 +688,7 @@ document.getElementById("zoomOut")?.addEventListener("click", (e) => {
   webGraph.camera.animatedZoom(0.75);
 });
 
-document.getElementById("zoomReset")?.addEventListener("click", (e) => {
+document.getElementById('zoomReset')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive) return;
@@ -752,7 +699,7 @@ document.getElementById("zoomReset")?.addEventListener("click", (e) => {
 /**---------------------------------
  * Settings Menu - Highlight
  *--------------------------------*/
-document.getElementById("highlightNode")?.addEventListener("click", (e) => {
+document.getElementById('highlightNode')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive || !graph) return;
@@ -763,7 +710,7 @@ document.getElementById("highlightNode")?.addEventListener("click", (e) => {
 /**---------------------------------
  * Settings Menu - Cluster
  *--------------------------------*/
-document.getElementById("toggleCluster")?.addEventListener("click", (e) => {
+document.getElementById('toggleCluster')?.addEventListener('click', (e) => {
   e.preventDefault();
 
   if (!webGraph || !webGraph.isRenderingActive || !graph) return;

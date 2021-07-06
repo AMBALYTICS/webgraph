@@ -1,7 +1,6 @@
 import {
   AppMode,
-  ILayoutConfiguration,
-  Layout,
+  LayoutMapping,
   NodeType,
 } from "../../Configuration";
 import { SerializedNode, SerializedEdge } from "graphology-types";
@@ -43,9 +42,7 @@ interface IActionPayload {
   nodeType?: NodeType;
   edges?: Set<SerializedEdge>;
   toggleEdgeRendering?: boolean;
-  layout?: Layout;
-  layoutConfig?: ILayoutConfiguration;
-  layoutMapping?: { [key: string]: { x: number; y: number } };
+  layoutMapping?: LayoutMapping;
 }
 
 /**

@@ -1,20 +1,18 @@
-import { Layout, ILayoutConfiguration } from "./layouts";
 import { AppMode } from "./appmode";
 import { IContextMenu } from "./contextmenu";
 import { INodeInfoBox } from "./nodeinfobox";
 import { NodeType } from "./nodetype";
 import { WebGLSettings } from "sigma/types/renderers/webgl/settings";
 import { LabelSelector } from "./labelselector";
+import Graph from 'graphology';
 
 /**
  * Interface for the graphs configurations.
  *
  * {@label IGraphConfiguration}
  */
-interface IGraphConfiguration {
+export interface IGraphConfiguration {
   sigmaSettings: Partial<WebGLSettings>;
-  layout: Layout;
-  layoutConfiguration: ILayoutConfiguration;
   appMode: AppMode;
   contextMenus?: IContextMenu;
   suppressContextMenu: boolean;
@@ -29,7 +27,6 @@ interface IGraphConfiguration {
   defaultNodeType: NodeType;
   enableHistory: boolean;
   labelSelector: LabelSelector;
-  initializeForceAtlas2WebWorker?: boolean;
 }
 
 /**
@@ -37,12 +34,8 @@ interface IGraphConfiguration {
  *
  * {@label defaultGraphConfiguration}
  */
-const DEFAULT_GRAPH_CONFIGURATION: IGraphConfiguration = {
+export const DEFAULT_GRAPH_CONFIGURATION: IGraphConfiguration = {
   sigmaSettings: {},
-  layout: Layout.PREDEFINED,
-  layoutConfiguration: {
-    predefinedLayoutOptions: {},
-  },
   appMode: AppMode.STATIC,
   suppressContextMenu: true,
   disableHover: false,
@@ -53,14 +46,18 @@ const DEFAULT_GRAPH_CONFIGURATION: IGraphConfiguration = {
   importantNeighborsBidirectional: false,
   defaultNodeType: NodeType.RING,
   enableHistory: false,
-  labelSelector: LabelSelector.LEVELS,
-  initializeForceAtlas2WebWorker: false,
+  labelSelector: LabelSelector.LEVELS
 };
 
-export * from "./layouts";
+export type LayoutMapping = {[key: string]: {x: number, y: number}};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type LayoutOptions = any; // ? Is there a more specific type??
+
+export type Layout = (graph: Graph, options?: LayoutOptions) => void | LayoutMapping;
+
 export * from "./appmode";
 export * from "./contextmenu";
 export * from "./nodeinfobox";
 export * from "./nodetype";
 export * from "./labelselector";
-export { IGraphConfiguration, DEFAULT_GRAPH_CONFIGURATION };
