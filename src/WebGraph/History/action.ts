@@ -1,9 +1,5 @@
-import {
-  AppMode,
-  LayoutMapping,
-  NodeType,
-} from "../../Configuration";
-import { SerializedNode, SerializedEdge } from "graphology-types";
+import { AppMode, LayoutMapping, NodeType } from '../../Configuration';
+import { SerializedNode, SerializedEdge } from 'graphology-types';
 
 /**
  * Represents the type of an action performed on the {@link WebGraph}.
@@ -12,22 +8,22 @@ import { SerializedNode, SerializedEdge } from "graphology-types";
  */
 enum ActionType {
   // AppMode
-  UPDATE_APP_MODE = "update_app_mode",
+  UPDATE_APP_MODE = 'update_app_mode',
 
   // Nodes
-  DROP_NODE = "drop_node",
-  UPDATE_OR_ADD_NODE = "update_or_add_node",
-  UPDATE_NODE_TYPE = "update_node_type",
+  DROP_NODE = 'drop_node',
+  UPDATE_OR_ADD_NODE = 'update_or_add_node',
+  UPDATE_NODE_TYPE = 'update_node_type',
 
   // Edges
-  REPLACE_EDGES = "replace_edges",
-  UPDATE_OR_ADD_EDGE = "update_or_add_edge",
-  TOGGLE_EDGE_RENDERING = "toggle_edge_rendering",
-  TOGGLE_IMPORTANT_EDGE_RENDERING = "toggle_important_edge_rendering",
+  REPLACE_EDGES = 'replace_edges',
+  UPDATE_OR_ADD_EDGE = 'update_or_add_edge',
+  TOGGLE_EDGE_RENDERING = 'toggle_edge_rendering',
+  TOGGLE_IMPORTANT_EDGE_RENDERING = 'toggle_important_edge_rendering',
 
   // Layout
-  SET_LAYOUT = "set_layout",
-  SET_LAYOUT_WEB_WORKER = "set_layout_web_worker",
+  SET_LAYOUT = 'set_layout',
+  SET_LAYOUT_WEB_WORKER = 'set_layout_web_worker',
 }
 
 /**

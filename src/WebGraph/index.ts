@@ -581,13 +581,17 @@ class WebGraph extends EventEmitter {
     layoutOptions?: LayoutOptions,
     addToHistory = true
   ): boolean {
-    const oldLayoutMapping = this.isHistoryEnabled && addToHistory ? InternalUtils.exportLayoutMapping(this.graphData) : undefined;  
-    
+    const oldLayoutMapping =
+      this.isHistoryEnabled && addToHistory
+        ? InternalUtils.exportLayoutMapping(this.graphData)
+        : undefined;
+
     this.applyLayout(layout, layoutOptions);
-    
+
     if (this.isHistoryEnabled && addToHistory) {
-      
-      const newLayoutMapping = InternalUtils.exportLayoutMapping(this.graphData);
+      const newLayoutMapping = InternalUtils.exportLayoutMapping(
+        this.graphData
+      );
 
       this.history?.addAction(
         {
@@ -595,7 +599,7 @@ class WebGraph extends EventEmitter {
         },
         ActionType.SET_LAYOUT,
         {
-          layoutMapping: newLayoutMapping
+          layoutMapping: newLayoutMapping,
         }
       );
     }
@@ -964,12 +968,9 @@ class WebGraph extends EventEmitter {
    *
    * @internal
    */
-  private applyLayout(
-    layout: Layout,
-    layoutOptions?: LayoutOptions
-  ): void {
+  private applyLayout(layout: Layout, layoutOptions?: LayoutOptions): void {
     const newLayout = layout(this.graphData, layoutOptions);
-    
+
     // If layout returned mapping (not used the layout.assign) then animate the graph
     if (typeof newLayout !== 'undefined') {
       this.animateGraph(this.graphData, newLayout);

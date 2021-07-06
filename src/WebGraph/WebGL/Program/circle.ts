@@ -5,11 +5,11 @@
  * {@see https://github.com/jacomyal/sigma.js/blob/v2/src/renderers/webgl/programs/node.fast.ts}
  */
 
-import { RenderNodeParams } from "sigma/types/renderers/webgl/programs/common/node";
-import { AbstractNodeProgram, floatColor } from "sigma";
-import { NodeAttributes } from "sigma/types/types";
-import vertexShaderSource from "../Shader/node.vert.glsl";
-import fragmentShaderSource from "../Shader/node.circle.frag.glsl";
+import { RenderNodeParams } from 'sigma/types/renderers/webgl/programs/common/node';
+import { AbstractNodeProgram, floatColor } from 'sigma';
+import { NodeAttributes } from 'sigma/types/types';
+import vertexShaderSource from '../Shader/node.vert.glsl';
+import fragmentShaderSource from '../Shader/node.circle.frag.glsl';
 
 const POINTS = 1,
   ATTRIBUTES = 4;
@@ -21,7 +21,7 @@ class NodeCircleProgram extends AbstractNodeProgram {
 
   process(data: NodeAttributes, offset: number): void {
     if (data.color === undefined) {
-      data.color = "#000";
+      data.color = '#000';
     }
 
     const color = floatColor(data.color);

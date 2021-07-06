@@ -19,7 +19,7 @@ export const getNodeSizeForValue = (
 ): number => {
   if (steps <= 0 || minNodeSize <= 0 || maxNodeSize <= 0) {
     throw new Error(
-      "steps, minNodeSize and maxNodeSize must all be positive numbers and greater 0"
+      'steps, minNodeSize and maxNodeSize must all be positive numbers and greater 0'
     );
   }
 
@@ -52,7 +52,7 @@ export const getNodeSizeForValue = (
  *
  * @throws Error - if min value is larger than max value
  * @throws Error - if value is smaller or equal to 0
- * 
+ *
  * @returns {string} - A color value as hex string out of the colors input
  *
  * @example
@@ -76,7 +76,7 @@ export const getNodeColorForValue = (
   maxValue: number,
   colors: Array<string>
 ): string => {
-  if (value < 0) throw new Error("Value must be greater or equal to 0");
+  if (value < 0) throw new Error('Value must be greater or equal to 0');
   if (minValue > maxValue)
     throw new Error("Min value can't be larger than max value");
 

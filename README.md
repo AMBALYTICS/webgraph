@@ -23,33 +23,33 @@ Create a container for the WebGraph inside the `<body>` of your HTML document:
 Import the `WebGraph` as well as the `Graph` from the [Graphology](https://github.com/graphology/graphology) library into your JavaScript/TypeScript file.
 
 ```javascript
-import { WebGraph } from "webgraph";
-import Graph from "graphology";
+import { WebGraph } from 'webgraph';
+import Graph from 'graphology';
 ```
 
 Get your container, create and fill the `Graph` object (See the Graphology [docs](https://graphology.github.io/) for more info.), create your config and call the `WebGraph` constructor with the container and the just created graph and config.
 
 ```javascript
-const container = document.getElementById("webGraph");
+const container = document.getElementById('webGraph');
 const graph = new Graph();
 
-graph.addNode("n1", {
-  label: "Hello",
+graph.addNode('n1', {
+  label: 'Hello',
   x: 1,
   y: 1,
-  color: "#D1495B",
+  color: '#D1495B',
   size: 10,
 });
 
-graph.addNode("n2", {
-  label: "Graph!",
+graph.addNode('n2', {
+  label: 'Graph!',
   x: 1,
   y: 0,
-  color: "#EDAE49",
+  color: '#EDAE49',
   size: 10,
 });
 
-graph.addEdge("n1", "n2", { color: "#ccc" });
+graph.addEdge('n1', 'n2', { color: '#ccc' });
 
 const config = { highlightSubGraphOnHover: false };
 

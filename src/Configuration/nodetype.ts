@@ -10,28 +10,28 @@ enum NodeType {
    *
    * {@label RING}
    */
-  RING = "ring",
+  RING = 'ring',
 
   /**
    * The "CIRCLE" type turns the node into basic circle.
    *
    * {@label CIRCLE}
    */
-  CIRCLE = "circle",
+  CIRCLE = 'circle',
 
   /**
    * The "RECTANGLE" type turns the node into a basic rectangle.
    *
    * {@label RECTANGLE}
    */
-  RECTANGLE = "rectangle",
+  RECTANGLE = 'rectangle',
 
   /**
    * The "TRIANGLE" type turns the node into a basic triangle.
    *
    * {@label TRIANGLE}
    */
-  TRIANGLE = "triangle",
+  TRIANGLE = 'triangle',
 }
 
 export { NodeType };

@@ -10,7 +10,7 @@ enum AppMode {
    *
    * {@label STATIC}
    */
-  STATIC = "static",
+  STATIC = 'static',
 
   /**
    * "DYNAMIC" enables the drag functionality and allows an extended interaction
@@ -18,7 +18,7 @@ enum AppMode {
    *
    * {@label DYNAMIC}
    */
-  DYNAMIC = "dynamic",
+  DYNAMIC = 'dynamic',
 }
 
 export { AppMode };

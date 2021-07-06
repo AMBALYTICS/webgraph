@@ -1,8 +1,8 @@
 import { Camera } from 'sigma';
 import { NodeAttributes } from 'sigma/types/types';
 import { NodeKey } from 'graphology-types';
-import Graph from "graphology";
-import { LayoutMapping } from "../Configuration";
+import Graph from 'graphology';
+import { LayoutMapping } from '../Configuration';
 
 /**
  * This is used to export the layout mapping from a graphology graph.
@@ -10,16 +10,17 @@ import { LayoutMapping } from "../Configuration";
  * @param {Graph} graph
  * @returns {LayoutMapping}
  */
- export const exportLayoutMapping = (graph: Graph): LayoutMapping => graph.nodes().reduce((prev, nodeKey) => {
-  const { x, y } = graph.getNodeAttributes(nodeKey);
-  return {
-    ...prev,
-    [nodeKey]: {
-      x,
-      y
-    }
-  }
-}, {} as LayoutMapping);
+export const exportLayoutMapping = (graph: Graph): LayoutMapping =>
+  graph.nodes().reduce((prev, nodeKey) => {
+    const { x, y } = graph.getNodeAttributes(nodeKey);
+    return {
+      ...prev,
+      [nodeKey]: {
+        x,
+        y,
+      },
+    };
+  }, {} as LayoutMapping);
 
 /**
  * Selects all visible nodes to have a visible label.
