@@ -10,7 +10,9 @@ import {
 import { SerializedEdge, SerializedNode } from 'graphology-types';
 import Graph, { MultiGraph } from 'graphology';
 import { circlepack, circular, random } from 'graphology-layout';
-import forceAtlas2, { ForceAtlas2LayoutOptions } from 'graphology-layout-forceatlas2';
+import forceAtlas2, {
+  ForceAtlas2LayoutOptions,
+} from 'graphology-layout-forceatlas2';
 import FA2LayoutSupervisor from 'graphology-layout-forceatlas2/worker';
 
 /**---------------------------------------------------------------------------
@@ -541,11 +543,14 @@ document.getElementById('layoutForceAtlas2')?.addEventListener('click', (e) => {
 /**---------------------------------
  * Settings Menu - ForceAtlas2 Web Worker
  *--------------------------------*/
-const fa2ww = (graph: Graph, options?: { interval: number, options: ForceAtlas2LayoutOptions }) => {
+const fa2ww = (
+  graph: Graph,
+  options?: { interval: number; options: ForceAtlas2LayoutOptions }
+) => {
   const layout = new FA2LayoutSupervisor(graph, options?.options);
-  
+
   layout.start();
-  
+
   setTimeout(() => layout.stop(), options?.interval);
 };
 
@@ -556,7 +561,7 @@ document.getElementById('ww')?.addEventListener('click', (e) => {
 
   if (!webGraph || !webGraph.isRenderingActive) return;
 
-  webGraph.setAndApplyLayout(fa2ww, { interval: 1000 })
+  webGraph.setAndApplyLayout(fa2ww, { interval: 1000 });
 });
 
 /**---------------------------------
