@@ -34,6 +34,7 @@ import { ActionType, HistoryManager } from './History';
 import drawLabel from './Canvas/label';
 import { InternalUtils } from '../Utils';
 import EventEmitter from 'events';
+import isGraph from 'graphology-utils/is-graph';
 
 /**
  * The WebGraph class represents the main endpoint of the module.
@@ -121,10 +122,10 @@ class WebGraph extends EventEmitter {
 
     this.container = container;
 
-    if (graphData instanceof Graph) {
-      this.graphData = graphData;
+    if (isGraph(graphData)) {
+      this.graphData = graphData as Graph;
     } else {
-      this.graphData = Graph.from(graphData);
+      this.graphData = Graph.from(graphData as SerializedGraph);
     }
 
     this.configuration = {
