@@ -95,7 +95,7 @@ async function drawFullGraph(graphDataJSON: any[]) {
   });
 
   if (webGraph?.isRenderingActive) webGraph.destroy();
-  
+
   random.assign(graph);
 
   // initialize and render graph
@@ -167,7 +167,11 @@ async function drawFullGraph(graphDataJSON: any[]) {
           },
           {
             label: 'highlight node',
-            callback: (key: string) => webGraph?.highlightNode(key, 2000),
+            callback: (key: string) => {
+              webGraph?.highlightNode(key);
+
+              setTimeout(() => webGraph?.unhighlightNode(key), 2000);
+            },
           },
         ],
         1: [
@@ -191,7 +195,11 @@ async function drawFullGraph(graphDataJSON: any[]) {
           },
           {
             label: 'highlight node',
-            callback: (key: string) => webGraph?.highlightNode(key, 2000),
+            callback: (key: string) => {
+              webGraph?.highlightNode(key);
+
+              setTimeout(() => webGraph?.unhighlightNode(key), 2000);
+            },
           },
         ],
       },
@@ -704,7 +712,10 @@ document.getElementById('highlightNode')?.addEventListener('click', (e) => {
 
   if (!webGraph || !webGraph.isRenderingActive || !graph) return;
 
-  webGraph.highlightNode(graph?.nodes()[0], 3000);
+  const key = graph?.nodes()[0];
+  webGraph?.highlightNode(key);
+
+  setTimeout(() => webGraph?.unhighlightNode(key), 3000);
 });
 
 /**---------------------------------

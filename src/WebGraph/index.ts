@@ -551,19 +551,25 @@ class WebGraph extends EventEmitter {
   }
 
   /**
-   * Highlights a node for a specified duration.
+   * Highlights a node.
    *
    * @param nodeKey - The key of the node to highlight
-   * @param duration - The duration of the highlight in milliseconds
    *
    * @public
    */
-  public highlightNode(nodeKey: NodeKey, duration: number): void {
+  public highlightNode(nodeKey: NodeKey): void {
     this.renderer?.highlightNode(nodeKey);
+  }
 
-    setTimeout(() => {
-      this.renderer?.unhighlightNode(nodeKey);
-    }, duration);
+  /**
+   * Unhighlights a node.
+   *
+   * @param nodeKey - The key of the node to highlight
+   *
+   * @public
+   */
+  public unhighlightNode(nodeKey: NodeKey): void {
+    this.renderer?.unhighlightNode(nodeKey);
   }
 
   /**
