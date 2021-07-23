@@ -65,7 +65,10 @@
   },
   "jest": {
     "collectCoverage": true,
-    "coverageReporters": ["json", "lcov"]
+    "coverageReporters": [
+      "json",
+      "lcov"
+    ]
   },
   "config": {
     "commitizen": {
