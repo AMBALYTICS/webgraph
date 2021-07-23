@@ -4,13 +4,13 @@
 
 [![Maintainability](https://api.codeclimate.com/v1/badges/2ebefe47aa4de9023ec5/maintainability)](https://codeclimate.com/github/AMBALYTICS/webgraph/maintainability)
 [![Test Coverage](https://api.codeclimate.com/v1/badges/2ebefe47aa4de9023ec5/test_coverage)](https://codeclimate.com/github/AMBALYTICS/webgraph/test_coverage)
-[![Node.js CI](https://github.com/AMBALYTICS/webgraph/actions/workflows/node.js.yml/badge.svg)](https://github.com/AMBALYTICS/webgraph/actions/workflows/node.js.yml)
+[![Node.js CI](https://github.com/AMBALYTICS/webgraph/actions/workflows/master.yml/badge.svg)](https://github.com/AMBALYTICS/webgraph/actions/workflows/master.yml)
 
 Remark: WebGraph is using a fork of Sigma.js version 2 that can be found [here](https://github.com/robinerol/sigma.js/tree/v2) on branch v2.
 
 ## 📨 Installation
 
-```javascript
+```bash
 npm install github:robinerol/webgraph
 ```
 
