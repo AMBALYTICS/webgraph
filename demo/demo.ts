@@ -22,7 +22,6 @@ let webGraph: WebGraph | undefined = undefined;
 let graph: Graph | undefined = undefined;
 const webGraphContainer = document.getElementById('webGraph');
 const webGraphContextMenuContainer = document.getElementById('webGraphCM');
-const webGraphNodeInfoBox = document.getElementById('webGraphNIB');
 const status = document.getElementById('status');
 
 async function drawFullGraph(graphDataJSON: any[]) {
@@ -33,12 +32,6 @@ async function drawFullGraph(graphDataJSON: any[]) {
   if (!webGraphContextMenuContainer) {
     throw new Error(
       "No div container with the ID 'webGraphCM' has been found."
-    );
-  }
-
-  if (!webGraphNodeInfoBox) {
-    throw new Error(
-      "No div container with the ID 'webGraphNIB' has been found."
     );
   }
 
@@ -103,45 +96,44 @@ async function drawFullGraph(graphDataJSON: any[]) {
   // initialize and render graph
   webGraph = new WebGraph(webGraphContainer, graph, {
     appMode: AppMode.DYNAMIC,
-    nodeInfoBox: {
-      container: webGraphNodeInfoBox,
-      cssShow: 'show-hover',
-      cssHide: 'hide',
-      xoffset: -75,
-      yoffset: 20,
-      callback: {
-        0: async (key: string, score?: number) => {
-          const dataJson: any = await fetch(
-            'http://localhost:9002/node?q=' + key
-          )
-            .then((response) => response.json())
-            .then((json) => json);
+    nodeInfoBoxGenerator: async (category, key, offset, score, onClose) => {
+      const xoffset = -75;
+      const yoffset = 20;
+      
+      const dataJson = await fetch('http://localhost:9002/node?q=' + key)
+      .then((response) => response.json())
+      .then((json) => json);
 
-          if (!dataJson) return { header: 'error' };
+      if (!dataJson) throw new Error();
 
-          return {
-            preheader: dataJson.year,
-            header: dataJson.title,
-            content: dataJson.abstract,
-            footer: 'Score: ' + score,
-          };
-        },
-        1: async (key: string) => {
-          const dataJson: any = await fetch(
-            'http://localhost:9002/node?q=' + key
-          )
-            .then((response) => response.json())
-            .then((json) => json);
+      const element = document.createElement('div');
+      element.className = 'nodeInfoBox';
+      element.style.top = offset.y + yoffset + 'px';
+      element.style.left = offset.x + xoffset + 'px';
 
-          if (!dataJson) return { header: 'error' };
+      const preHeader = document.createElement('span');
+      preHeader.setAttribute('id', 'preheader');
+      preHeader.innerHTML = dataJson.year;
+      if (dataJson.year) element.append(preHeader);
 
-          return {
-            preheader: dataJson.year,
-            header: dataJson.title,
-            content: dataJson.abstract,
-          };
-        },
-      },
+      const header = document.createElement('span');
+      header.setAttribute('id', 'header');
+      header.innerHTML = dataJson.title;
+      if (dataJson.title) element.append(header);
+
+      const content = document.createElement('span');
+      content.setAttribute('id', 'content');
+      content.innerHTML = dataJson.abstract;
+      if (dataJson.abstract) element.append(content);
+
+      const footer = document.createElement('span');
+      footer.setAttribute('id', 'footer');
+      footer.innerHTML = 'Score: ' + score;
+      if (score) element.append(footer);
+      
+      webGraphContainer.prepend(element);
+      
+      onClose(() => element.remove());
     },
     contextMenus: {
       container: webGraphContextMenuContainer,
@@ -261,12 +253,6 @@ function drawGraph(json: any[], baseUrl: string): void {
   if (!webGraphContextMenuContainer) {
     throw new Error(
       "No div container with the ID 'webGraphCM' has been found."
-    );
-  }
-
-  if (!webGraphNodeInfoBox) {
-    throw new Error(
-      "No div container with the ID 'webGraphNIB' has been found."
     );
   }
 

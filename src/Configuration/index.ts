@@ -1,6 +1,6 @@
 import { AppMode } from './appmode';
 import { IContextMenu } from './contextmenu';
-import { INodeInfoBox } from './nodeinfobox';
+import { NodeInfoBoxGenerator } from './nodeinfobox';
 import { NodeType } from './nodetype';
 import { WebGLSettings } from 'sigma/types/renderers/webgl/settings';
 import { LabelSelector } from './labelselector';
@@ -17,7 +17,7 @@ export interface IGraphConfiguration {
   contextMenus?: IContextMenu;
   suppressContextMenu: boolean;
   disableHover: boolean;
-  nodeInfoBox?: INodeInfoBox;
+  nodeInfoBoxGenerator?: NodeInfoBoxGenerator;
   showNodeInfoBoxOnClick: boolean;
   highlightSubGraphOnHover: boolean;
   subGraphHighlightColor: string;

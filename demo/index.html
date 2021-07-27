@@ -95,7 +95,6 @@
 
     <div id="webGraph"></div>
     <div id="webGraphCM" class="hide"></div>
-    <div id="webGraphNIB" class="hide"></div>
 
     <style>
       html,
@@ -174,7 +173,7 @@
         display: none;
       }
 
-      .show-hover {
+      .nodeInfoBox {
         z-index: 1000;
         position: absolute;
         display: block;
@@ -187,7 +186,7 @@
         padding: 5px;
       }
 
-      .show-hover::before {
+      .nodeInfoBox::before {
         content: '';
         position: absolute;
         top: -webkit-calc(-10px);

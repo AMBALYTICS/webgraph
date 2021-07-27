@@ -6,7 +6,6 @@ import {
   DEFAULT_GRAPH_CONFIGURATION,
   NodeType,
 } from '../src/Configuration/index';
-import { IGraphConfiguration } from '../types/Configuration';
 import { WebGLRenderer } from 'sigma';
 import { SerializedEdge, SerializedNode } from 'graphology-types';
 import { circular, random } from 'graphology-layout';
@@ -95,7 +94,7 @@ describe('test public methods of the WebGraph class', () => {
       const suppressContextMenu = !DEFAULT_GRAPH_CONFIGURATION.suppressContextMenu;
       const labelFont = 'RANDOM FONT';
 
-      const config: Partial<IGraphConfiguration> = {
+      const config = {
         includeImportantNeighbors: includeImportantNeighbors,
         suppressContextMenu: suppressContextMenu,
         sigmaSettings: {
