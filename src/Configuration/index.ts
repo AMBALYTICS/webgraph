@@ -1,6 +1,4 @@
 import { AppMode } from './appmode';
-import { IContextMenu } from './contextmenu';
-import { NodeInfoBoxGenerator } from './nodeinfobox';
 import { NodeType } from './nodetype';
 import { WebGLSettings } from 'sigma/types/renderers/webgl/settings';
 import { LabelSelector } from './labelselector';
@@ -14,11 +12,8 @@ import Graph from 'graphology';
 export interface IGraphConfiguration {
   sigmaSettings: Partial<WebGLSettings>;
   appMode: AppMode;
-  contextMenus?: IContextMenu;
   suppressContextMenu: boolean;
   disableHover: boolean;
-  nodeInfoBoxGenerator?: NodeInfoBoxGenerator;
-  showNodeInfoBoxOnClick: boolean;
   highlightSubGraphOnHover: boolean;
   subGraphHighlightColor: string;
   includeImportantNeighbors: boolean;
@@ -39,7 +34,6 @@ export const DEFAULT_GRAPH_CONFIGURATION: IGraphConfiguration = {
   appMode: AppMode.STATIC,
   suppressContextMenu: true,
   disableHover: false,
-  showNodeInfoBoxOnClick: true,
   highlightSubGraphOnHover: true,
   subGraphHighlightColor: '#fc9044',
   includeImportantNeighbors: false,
@@ -60,7 +54,5 @@ export type Layout = (
 ) => void | LayoutMapping;
 
 export * from './appmode';
-export * from './contextmenu';
-export * from './nodeinfobox';
 export * from './nodetype';
 export * from './labelselector';

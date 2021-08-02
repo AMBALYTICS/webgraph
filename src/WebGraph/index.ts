@@ -20,7 +20,6 @@ import {
   NodeType,
   LabelSelector,
   LayoutOptions,
-  NodeInfoBoxGenerator,
 } from '../Configuration';
 import drawHover from './Canvas/hover';
 import {
@@ -34,23 +33,21 @@ import { ActionType, HistoryManager } from './History';
 import drawLabel from './Canvas/label';
 import { InternalUtils } from '../Utils';
 import EventEmitter from 'events';
-import TypedEmitter from "typed-emitter";
+import TypedEmitter from 'typed-emitter';
 import isGraph from 'graphology-utils/is-graph';
 
 interface MessageEvents {
-  rendered: () => void,
-  syncLayoutCompleted: () => void,
-  initialFA2wwStarted: () => void,
-  initialFA2wwCompleted: () => void,
-  clickNode: (args: { node: NodeKey; event: Event }) => void,
-  rightClickNode: (args: { node: NodeKey; event: Event }) => void,
-  dragNode: (args: { node: NodeKey; event: Event }) => void,
-  draggedNode: (args: { node: NodeKey; event: Event }) => void,
-  enterNode: (args: { node: NodeKey }) => void,
-  leaveNode: (args: { node: NodeKey }) => void,
-  nodeInfoBoxClosed: (args: { byRightClick: boolean }) => void,
-  contextMenuOpened: (args: { node: NodeKey; posTop: number; posLeft: number; event: Event }) => void,
-  contextMenuClosed: (args: { contextNode?: NodeKey; event: Event }) => void
+  rendered: () => void;
+  syncLayoutCompleted: () => void;
+  click: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mousedown: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mouseenter: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mouseleave: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mousemove: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+}
+
+interface ExtendedMouseEvent extends MouseEvent {
+  original: MouseEvent;
 }
 
 /**
@@ -67,13 +64,11 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
   private highlightedNodes: Set<NodeKey> = new Set<NodeKey>();
   private highlightedEdges: Set<EdgeKey> = new Set<EdgeKey>();
   private hoveredNode: NodeKey | undefined = undefined;
-  private isNodeDragged = false;
   private isHistoryEnabled = false;
   private history: HistoryManager | undefined = undefined;
   private isEdgeRenderingDisabled = false;
   private isJustImportantEdgesEnabled = false;
   private isNodeBackdropRenderingEnabled = false;
-  private hideNodeInfoBoxCB: (() => void) | undefined;
 
   /**
    * Creates an instance of web graph.
@@ -515,9 +510,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
           });
         }
       });
-
-      // hide the node info box container
-      this.hideNodeInfoBox();
 
       // add to history set
       if (this.isHistoryEnabled && addToHistory) {
@@ -1072,66 +1064,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
 
       // if no node info callbacks are provided, use the sigma.js library default
       // or if nodeInfoBox should appear on click and not on hover
-      if (!this.configuration.nodeInfoBoxGenerator || this.configuration.showNodeInfoBoxOnClick) {
-        drawHover(context, data, settings, this.configuration);
-        return;
-      }
-
-      if (this.isNodeDragged) return;
-
-      // set the score and category attribute
-      data.score = nodeAttributes.score;
-      data.category = nodeAttributes.category;
-
-      this.showNodeInfoBox(this.configuration.nodeInfoBoxGenerator, data);
+      drawHover(context, data, settings, this.configuration);
     };
-  }
-
-  /**
-   * Calls the callback to show a node info box and register the close callback.
-   *
-   * @param nodeInfoBoxGenerator - The node info box to display
-   * @param data - The nodes attributes of the target node
-   *
-   * @internal
-   */
-  private showNodeInfoBox(
-    nodeInfoBoxGenerator: NodeInfoBoxGenerator,
-    data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'label' | 'color'>
-  ): void {
-    // if no category is present, return
-    if (data.category === undefined) return;
-
-    nodeInfoBoxGenerator(
-      data.category,
-      data.key,
-      {
-        x: data.x,
-        y: data.y,
-      },
-      data.score,
-      (cb) => this.hideNodeInfoBoxCB = cb
-    );
-  }
-
-  /**
-   * Hides the node info box.
-   *
-   * @param [rightClickNode] - Whether a node has been right clicked to open the context menu
-   *
-   * @internal
-   */
-  private hideNodeInfoBox(rightClickNode?: boolean): void {
-    // if right click on node, continue to hide the node
-    // if not right clicked, but still hovering over the node, return
-    if (!rightClickNode && this.hoveredNode) return;
-
-    this.hideNodeInfoBoxCB?.();
-    this.hideNodeInfoBoxCB = undefined;
-
-    this.emit('nodeInfoBoxClosed', {
-      byRightClick: rightClickNode ? rightClickNode : false,
-    });
   }
 
   /**
@@ -1244,36 +1178,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    * @internal
    */
   private initializeEventHandlers(): void {
-    // context menu listeners
-    this.initializeContextMenuListeners();
-
-    // click and drag listeners
-    this.initializeClickAndDragListeners();
-
-    // hover highlight listeners
-    this.initializeHoverHighlightingListeners();
-  }
-
-  /**
-   * Initializes the context menu listeners. Loads all context menus as well as the
-   * "suppressContextMenu" value from the {@link ILayoutConfiguration} and initializes
-   * the listeners. When no {@link IContextMenu} is available, there will be no context
-   * menu on a right click on a node. There's nothing like a default value for the
-   * category attribute, if it is not present. If the category attribute is missing,
-   * the node will not have a context menu.
-   *
-   * @remarks - Regarding {@link IContextMenu}:
-   * The number given in the 'entries' field of a {@link IContextMenu} represents the  node
-   * category the array of {@link IContextMenuItem}s belongs to:
-   * A node with category 0 would get the Array<IContextMenuItem> mapped to 0
-   * A node with category 1 would get the Array<IContextMenuItem> mapped to 1
-   * ...
-   *
-   * @internal
-   */
-  private initializeContextMenuListeners(): void {
-    if (!this.renderer) return;
-
     // handles whether the default context menu is suppressed or not
     this.container.addEventListener('contextmenu', (event) => {
       const suppressContextMenu = this.configuration.suppressContextMenu;
@@ -1283,106 +1187,56 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
       event.preventDefault();
     });
 
-    // load context menus from the active configuration
-    const allContextMenus = this.configuration.contextMenus;
+    // listener that emit events to the customer
+    this.initializeEmittingListeners();
 
-    if (!allContextMenus) return;
+    // click and drag listeners
+    this.initializeNodeDragListeners();
 
-    const cmcontainer = allContextMenus.container;
-    const cssHide = allContextMenus.cssHide;
-    const cssShow = allContextMenus.cssShow;
+    // hover highlight listeners
+    this.initializeHoverHighlightingListeners();
+  }
 
-    let isContextMenuOpen = false;
-    let contextNode: NodeKey | undefined = undefined;
+  private initializeEmittingListeners(): void {
+    const mouseCaptor = this.renderer?.getMouseCaptor();
 
-    this.renderer.on('rightClickNode', ({ node, event }) => {
-      this.emit('rightClickNode', { node, event: event });
-      if (event.original.type !== 'contextmenu') return;
-      if (!cmcontainer) return;
-      if (this.graphData.getNodeAttribute(node, 'hidden')) return;
+    this.renderer?.on('rightClickNode', (data) =>
+      this.emit('click', data)
+    );
+    this.renderer?.on('clickNode', (data) => this.emit('click', data));
+    this.renderer?.on('downNode', ({ node, event }) => {
+      this.emit('mousedown', { node, event });
 
-      contextNode = node;
+      if (this.appMode === AppMode.STATIC) return;
 
-      if (isContextMenuOpen) {
-        // hide the context menu that's open
-        cmcontainer.className = cssHide;
-        isContextMenuOpen = false;
-      }
+      // emit mousemove event as long as a node is dragged
+      const handleMouseMove = (e: ExtendedMouseEvent) => {
+        this.emit('mousemove', { node, event: e });
+      };
 
-      event.preventDefault();
+      const handleMouseUp = () => {
+        mouseCaptor?.removeListener('mousemove', handleMouseMove);
+        mouseCaptor?.removeListener('mouseup', handleMouseUp);
+      };
 
-      // retrieve node category
-      const category = this.graphData.getNodeAttribute(node, 'category');
-      // if not present, return
-      if (category === undefined) return;
-
-      // retrieve nodes corresponding context menu
-      const contextMenu = allContextMenus.entries[category];
-      if (!contextMenu) return;
-
-      // generate context menus content
-      const contextMenuContent = document.createElement('ol');
-      contextMenu.forEach((ci) => {
-        const item: HTMLElement = document.createElement('li');
-        const label: HTMLElement = document.createElement('span');
-
-        // set label
-        label.innerHTML = ci.label;
-
-        // set click listener
-        item.addEventListener('click', () => {
-          ci.callback(node);
-
-          // hide the context menu that's open
-          cmcontainer.className = cssHide;
-          isContextMenuOpen = false;
-        });
-
-        // set icon
-        if (ci.icon) {
-          item.appendChild(ci.icon);
-        }
-
-        item.appendChild(label);
-
-        contextMenuContent.append(item);
-      });
-
-      // get possible offsets
-      const yoffset = allContextMenus.yoffset || 0;
-      const xoffset = allContextMenus.xoffset || 0;
-
-      // display the context menu
-      cmcontainer.innerHTML = '';
-      cmcontainer.append(contextMenuContent);
-      cmcontainer.className = cssShow;
-      cmcontainer.style.top = event.y + yoffset + 'px';
-      cmcontainer.style.left = event.x + xoffset + 'px';
-      isContextMenuOpen = true;
-
-      // hide the node info box container
-      this.hideNodeInfoBox(true);
-
-      this.emit('contextMenuOpened', {
-        node,
-        posTop: event.y + yoffset,
-        posLeft: event.x + xoffset,
-        event: event,
-      });
+      mouseCaptor?.on('mousemove', handleMouseMove);
+      mouseCaptor?.on('mouseup', handleMouseUp);
     });
-
-    this.container.addEventListener('click', (event) => {
-      // hide node info box container if open
-      this.hideNodeInfoBox();
-
-      if (!isContextMenuOpen) return;
-      if (!cmcontainer) return;
-
-      // hide the context menu if open
-      cmcontainer.className = cssHide;
-      isContextMenuOpen = false;
-      this.emit('contextMenuClosed', { contextNode, event: event });
+    this.renderer?.on('leaveNode', (data) => {
+      const handleNextMouseMove = (event: ExtendedMouseEvent) => {
+        this.emit('mouseleave', { node: data.node, event });
+        mouseCaptor?.removeListener('mousemove', handleNextMouseMove);
+      };
+      mouseCaptor?.on('mousemove', handleNextMouseMove);
     });
+    this.renderer?.on('enterNode', (data) => {
+      const handleNextMouseMove = (event: ExtendedMouseEvent) => {
+        this.emit('mouseenter', { node: data.node, event });
+        mouseCaptor?.removeListener('mousemove', handleNextMouseMove);
+      };
+      mouseCaptor?.on('mousemove', handleNextMouseMove);
+    });
+    // ! Sigma.js does not expose other mouse events AFAIK...
   }
 
   /**
@@ -1391,106 +1245,44 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    *
    * @internal
    */
-  private initializeClickAndDragListeners(): void {
+  private initializeNodeDragListeners(): void {
     if (!this.renderer) return;
 
     // used for dragging nodes
     const camera = this.renderer.getCamera();
     const mouseCaptor = this.renderer.getMouseCaptor();
-    let draggedNode: number | undefined;
 
-    // used for the info box on click
-    const delta = 3;
-    let startX: number;
-    let startY: number;
-    let node: string;
-
-    this.renderer.on('downNode', (event) => {
-      // get the position of the click and store the node that has been clicked
-      startX = event.event.x;
-      startY = event.event.y;
-      node = event.node;
-
-      if (this.appMode === AppMode.STATIC || event.event.original.button === 2)
-        return;
-
-      // enabled the dragging
-      this.isNodeDragged = true;
-      draggedNode = event.node;
-      camera.disable();
-      this.emit('dragNode', { node, event: event });
-    });
-
-    mouseCaptor.on('mouseup', (event) => {
-      // calculate the distance of the drag
-      const diffX = Math.abs(event.x - startX);
-      const diffY = Math.abs(event.y - startY);
-
-      // if distance of drag is smaller than delta its a click, not a drag
-      if (
-        (event.original.button === 0 || event.original.button === 1) &&
-        diffX < delta &&
-        diffY < delta
-      ) {
-        this.emit('clickNode', { node, event: event });
-
-        // show infoBoxContainer on click if enabled
-        if (
-          !this.graphData.getNodeAttribute(node, 'hidden') &&
-          this.configuration.showNodeInfoBoxOnClick
-        ) {
-          if (this.configuration.nodeInfoBoxGenerator && node) {
-            const data = this.graphData.getNodeAttributes(node);
-
-            // make the node info box visible
-            this.showNodeInfoBox(this.configuration.nodeInfoBoxGenerator, {
-              key: node,
-              label: data.label,
-              color: data.color,
-              size: data.size,
-              x: event.x,
-              y: event.y,
-              score: data.score,
-              category: data.category,
-            });
-          }
-        }
-      } else if (
-        draggedNode &&
-        (event.original.button === 0 || event.original.button === 1)
-      ) {
-        this.emit('draggedNode', { node, event: event });
-      }
+    this.renderer.on('downNode', ({ node, event }) => {
+      if (event.original.button !== 0) return;
 
       if (this.appMode === AppMode.STATIC) return;
 
-      // disabled the node drag
-      this.isNodeDragged = false;
-      draggedNode = undefined;
-      camera.enable();
-    });
+      camera.disable();
 
-    mouseCaptor.on('mousemove', (e) => {
-      if (
-        !this.renderer ||
-        this.appMode === AppMode.STATIC ||
-        !this.isNodeDragged ||
-        !draggedNode
-      ) {
-        return;
-      }
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!this.renderer) return;
 
-      // get new position of node
-      const normalizationFunction = this.renderer.normalizationFunction;
-      if (normalizationFunction === null) return;
+        // get new position of node
+        const normalizationFunction = this.renderer.normalizationFunction;
+        if (normalizationFunction === null) return;
 
-      const pos = normalizationFunction.inverse(
-        camera.viewportToGraph(this.renderer, e)
-      );
+        const pos = normalizationFunction.inverse(
+          camera.viewportToGraph(this.renderer, e)
+        );
 
-      // set new position of node
-      this.graphData.setNodeAttribute(draggedNode, 'x', pos.x);
-      this.graphData.setNodeAttribute(draggedNode, 'y', pos.y);
+        // set new position of node
+        this.graphData.setNodeAttribute(node, 'x', pos.x);
+        this.graphData.setNodeAttribute(node, 'y', pos.y);
+      };
+
+      const handleMouseUp = () => {
+        mouseCaptor.removeListener('mousemove', handleMouseMove);
+        mouseCaptor.removeListener('mouseup', handleMouseUp);
+        camera.enable();
+      };
+
+      mouseCaptor.on('mousemove', handleMouseMove);
+      mouseCaptor.on('mouseup', handleMouseUp);
     });
   }
 
@@ -1508,24 +1300,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    */
   private initializeHoverHighlightingListeners(): void {
     if (!this.renderer) return;
-    if (!this.configuration.highlightSubGraphOnHover) {
-      // if highlighting the subgraph is disabled add that the node info box container
-      // will be hidden when leaving a node and emit the hover event
-      this.renderer.on('enterNode', ({ node }) => {
-        this.emit('enterNode', { node });
-      });
-
-      this.renderer.on('leaveNode', ({ node }) => {
-        this.hideNodeInfoBox();
-        this.emit('leaveNode', { node });
-      });
-
-      return;
-    }
 
     this.renderer.on('enterNode', ({ node }) => {
-      this.emit('enterNode', { node });
-
       this.hoveredNode = node;
 
       if (
@@ -1542,8 +1318,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
     });
 
     this.renderer.on('leaveNode', ({ node }) => {
-      this.emit('leaveNode', { node });
-
       this.hoveredNode = undefined;
 
       // reset the zIndex
@@ -1563,9 +1337,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
       this.highlightedEdges.clear();
 
       this.renderer?.refresh();
-
-      // hide the node info box container if visible
-      this.hideNodeInfoBox();
     });
   }
 

@@ -21,18 +21,11 @@ import FA2LayoutSupervisor from 'graphology-layout-forceatlas2/worker';
 let webGraph: WebGraph | undefined = undefined;
 let graph: Graph | undefined = undefined;
 const webGraphContainer = document.getElementById('webGraph');
-const webGraphContextMenuContainer = document.getElementById('webGraphCM');
 const status = document.getElementById('status');
 
 async function drawFullGraph(graphDataJSON: any[]) {
   if (!webGraphContainer) {
     throw new Error("No div container with the ID 'webGraph' has been found.");
-  }
-
-  if (!webGraphContextMenuContainer) {
-    throw new Error(
-      "No div container with the ID 'webGraphCM' has been found."
-    );
   }
 
   graph = new MultiGraph();
@@ -96,111 +89,7 @@ async function drawFullGraph(graphDataJSON: any[]) {
   // initialize and render graph
   webGraph = new WebGraph(webGraphContainer, graph, {
     appMode: AppMode.DYNAMIC,
-    nodeInfoBoxGenerator: async (category, key, offset, score, onClose) => {
-      const xoffset = -75;
-      const yoffset = 20;
-      
-      const dataJson = await fetch('http://localhost:9002/node?q=' + key)
-      .then((response) => response.json())
-      .then((json) => json);
-
-      if (!dataJson) throw new Error();
-
-      const element = document.createElement('div');
-      element.className = 'nodeInfoBox';
-      element.style.top = offset.y + yoffset + 'px';
-      element.style.left = offset.x + xoffset + 'px';
-
-      const preHeader = document.createElement('span');
-      preHeader.setAttribute('id', 'preheader');
-      preHeader.innerHTML = dataJson.year;
-      if (dataJson.year) element.append(preHeader);
-
-      const header = document.createElement('span');
-      header.setAttribute('id', 'header');
-      header.innerHTML = dataJson.title;
-      if (dataJson.title) element.append(header);
-
-      const content = document.createElement('span');
-      content.setAttribute('id', 'content');
-      content.innerHTML = dataJson.abstract;
-      if (dataJson.abstract) element.append(content);
-
-      const footer = document.createElement('span');
-      footer.setAttribute('id', 'footer');
-      footer.innerHTML = 'Score: ' + score;
-      if (score) element.append(footer);
-      
-      webGraphContainer.prepend(element);
-      
-      onClose(() => element.remove());
-    },
-    contextMenus: {
-      container: webGraphContextMenuContainer,
-      cssHide: 'hide',
-      cssShow: 'show',
-      entries: {
-        0: [
-          {
-            label: 'drop node',
-            callback: (key: string) => webGraph?.dropNodes([key]),
-          },
-          {
-            label: 'type triangle',
-            callback: (key: string) =>
-              webGraph?.mergeNodes([
-                { key: key, attributes: { type: NodeType.TRIANGLE } },
-              ]),
-          },
-          {
-            label: 'type rectangle',
-            callback: (key: string) =>
-              webGraph?.mergeNodes([
-                { key: key, attributes: { type: NodeType.RECTANGLE } },
-              ]),
-          },
-          {
-            label: 'highlight node',
-            callback: (key: string) => {
-              webGraph?.highlightNode(key);
-
-              setTimeout(() => webGraph?.unhighlightNode(key), 2000);
-            },
-          },
-        ],
-        1: [
-          {
-            label: 'drop node',
-            callback: (key: string) => webGraph?.dropNodes([key]),
-          },
-          {
-            label: 'hide node',
-            callback: (key: string) =>
-              webGraph?.mergeNodes([
-                { key: key, attributes: { hidden: true } },
-              ]),
-          },
-          {
-            label: 'show node',
-            callback: (key: string) =>
-              webGraph?.mergeNodes([
-                { key: key, attributes: { hidden: false } },
-              ]),
-          },
-          {
-            label: 'highlight node',
-            callback: (key: string) => {
-              webGraph?.highlightNode(key);
-
-              setTimeout(() => webGraph?.unhighlightNode(key), 2000);
-            },
-          },
-        ],
-      },
-    },
-    suppressContextMenu: false,
     defaultNodeType: NodeType.CIRCLE,
-    showNodeInfoBoxOnClick: true,
     highlightSubGraphOnHover: true,
     includeImportantNeighbors: true,
     importantNeighborsBidirectional: true,
@@ -218,22 +107,167 @@ async function drawFullGraph(graphDataJSON: any[]) {
   webGraph.on('rendered', () => console.log('graph rendered'));
   webGraph.on('syncLayoutCompleted', () => console.log('syncLayoutCompleted'));
 
-  webGraph.on('clickNode', (e) => console.log('clickNode: ', e));
-  webGraph.on('rightClickNode', (e) => console.log('rightClickNode: ', e));
-  webGraph.on('dragNode', (e) => console.log('dragNode: ', e));
-  webGraph.on('draggedNode', (e) => console.log('draggedNode: ', e));
-  webGraph.on('enterNode', (e) => console.log('enterNode: ', e));
-  webGraph.on('leaveNode', (e) => console.log('leaveNode: ', e));
+  webGraph.on('click', (e) => console.log('click:', e));
 
-  webGraph.on('nodeInfoBoxClosed', (e) =>
-    console.log('nodeInfoBoxClosed: ', e)
-  );
-  webGraph.on('contextMenuOpened', (e) =>
-    console.log('contextMenuOpened: ', e)
-  );
-  webGraph.on('contextMenuClosed', (e) =>
-    console.log('contextMenuClosed: ', e)
-  );
+  const contextMenus: Record<
+    number,
+    { label: string; callback: (key: string) => void }[]
+  > = {
+    0: [
+      {
+        label: 'drop node',
+        callback: (key: string) => webGraph?.dropNodes([key]),
+      },
+      {
+        label: 'type triangle',
+        callback: (key: string) =>
+          webGraph?.mergeNodes([
+            { key: key, attributes: { type: NodeType.TRIANGLE } },
+          ]),
+      },
+      {
+        label: 'type rectangle',
+        callback: (key: string) =>
+          webGraph?.mergeNodes([
+            { key: key, attributes: { type: NodeType.RECTANGLE } },
+          ]),
+      },
+      {
+        label: 'highlight node',
+        callback: (key: string) => {
+          webGraph?.highlightNode(key);
+
+          setTimeout(() => webGraph?.unhighlightNode(key), 2000);
+        },
+      },
+    ],
+    1: [
+      {
+        label: 'drop node',
+        callback: (key: string) => webGraph?.dropNodes([key]),
+      },
+      {
+        label: 'hide node',
+        callback: (key: string) =>
+          webGraph?.mergeNodes([{ key: key, attributes: { hidden: true } }]),
+      },
+      {
+        label: 'show node',
+        callback: (key: string) =>
+          webGraph?.mergeNodes([{ key: key, attributes: { hidden: false } }]),
+      },
+      {
+        label: 'highlight node',
+        callback: (key: string) => {
+          webGraph?.highlightNode(key);
+
+          setTimeout(() => webGraph?.unhighlightNode(key), 2000);
+        },
+      },
+    ],
+  };
+
+  webGraph.on('click', async ({ node, event }) => {
+    const xoffset = -75;
+    const yoffset = 20;
+    const category = graph?.getNodeAttribute(node, 'category');
+
+    switch (event.original.button) {
+      case 0: {
+        const dataJson = await fetch('http://localhost:9002/node?q=' + node)
+          .then((response) => response.json())
+          .then((json) => json);
+
+        if (!dataJson) throw new Error();
+
+        const element = document.createElement('div');
+        element.className = 'nodeInfoBox';
+        element.style.top = event.y + yoffset + 'px';
+        element.style.left = event.x + xoffset + 'px';
+
+        const preHeader = document.createElement('span');
+        preHeader.setAttribute('id', 'preheader');
+        preHeader.innerHTML = dataJson.year;
+        if (dataJson.year) element.append(preHeader);
+
+        const header = document.createElement('span');
+        header.setAttribute('id', 'header');
+        header.innerHTML = dataJson.title;
+        if (dataJson.title) element.append(header);
+
+        const content = document.createElement('span');
+        content.setAttribute('id', 'content');
+        content.innerHTML = dataJson.abstract;
+        if (dataJson.abstract) element.append(content);
+
+        const footer = document.createElement('span');
+        footer.setAttribute('id', 'footer');
+
+        const score = graph?.getNodeAttribute(node, 'score');
+
+        footer.innerHTML = 'Score: ' + score;
+        if (score) element.append(footer);
+
+        webGraphContainer.prepend(element);
+
+        const removeListener = () => {
+          element.remove();
+          webGraph?.removeListener('mouseleave', removeListener);
+        };
+
+        webGraph?.addListener('mouseleave', removeListener);
+        break;
+      }
+      case 2: {
+        if (typeof category === 'undefined') return;
+
+        const menu = contextMenus[category];
+
+        // generate context menus content
+        const element = document.createElement('div');
+        element.className = 'webGraphCM';
+        element.style.top = event.y + yoffset + 'px';
+        element.style.left = event.x + xoffset + 'px';
+
+        const contextMenuContent = document.createElement('ol');
+        const childs = menu.map((ci) => {
+          const item: HTMLElement = document.createElement('li');
+          const label: HTMLElement = document.createElement('span');
+
+          // set label
+          label.innerHTML = ci.label;
+
+          // set click listener
+          item.addEventListener('click', () => {
+            ci.callback(node.toString());
+
+            // hide the context menu that's open
+            element.remove();
+          });
+
+          item.appendChild(label);
+          return item;
+        });
+        contextMenuContent.append(...childs);
+        element.appendChild(contextMenuContent);
+
+        webGraphContainer.prepend(element);
+
+        const removeListener = () => {
+          element.remove();
+          webGraphContainer?.removeEventListener('click', removeListener);
+        };
+
+        webGraphContainer?.addEventListener('click', removeListener);
+        break;
+      }
+    }
+  });
+
+  webGraph.on('mousedown', (e) => console.log('mousedown:', e));
+  webGraph.on('mouseenter', (e) => console.log('mouseenter:', e));
+  webGraph.on('mouseleave', (e) => console.log('mouseleave:', e));
+  webGraph.on('mousemove', (e) => console.log('mousemove:', e));
 
   webGraph.render();
 
@@ -245,12 +279,6 @@ async function drawFullGraph(graphDataJSON: any[]) {
 function drawGraph(json: any[], baseUrl: string): void {
   if (!webGraphContainer) {
     throw new Error("No div container with the ID 'webGraph' has been found.");
-  }
-
-  if (!webGraphContextMenuContainer) {
-    throw new Error(
-      "No div container with the ID 'webGraphCM' has been found."
-    );
   }
 
   if (webGraph?.isRenderingActive) webGraph.destroy();
@@ -268,31 +296,89 @@ function drawGraph(json: any[], baseUrl: string): void {
     });
   });
 
-  const contextMenus = {
-    container: webGraphContextMenuContainer,
-    cssHide: 'hide',
-    cssShow: 'show',
-    entries: {
-      0: [
-        {
-          label: 'Load 1 Node',
-          callback: (key: string) => loadNNodes(1, key, baseUrl),
-        },
-        {
-          label: 'Load 5 Nodes',
-          callback: (key: string) => loadNNodes(5, key, baseUrl),
-        },
-        {
-          label: 'Load 10 Nodes',
-          callback: (key: string) => loadNNodes(10, key, baseUrl),
-        },
-      ],
-    },
+  webGraph = new WebGraph(webGraphContainer, graph);
+
+  webGraph.on('rendered', () => console.log('graph rendered'));
+  webGraph.on('syncLayoutCompleted', () => console.log('syncLayoutCompleted'));
+
+  webGraph.on('click', (e) => console.log('click:', e));
+
+  const contextMenus: Record<
+    number,
+    { label: string; callback: (key: string) => void }[]
+  > = {
+    0: [
+      {
+        label: 'Load 1 Node',
+        callback: (key: string) => loadNNodes(1, key, baseUrl),
+      },
+      {
+        label: 'Load 5 Nodes',
+        callback: (key: string) => loadNNodes(5, key, baseUrl),
+      },
+      {
+        label: 'Load 10 Nodes',
+        callback: (key: string) => loadNNodes(10, key, baseUrl),
+      },
+    ],
   };
 
-  webGraph = new WebGraph(webGraphContainer, graph, {
-    contextMenus: contextMenus,
+  webGraph.on('click', async ({ node, event }) => {
+    const xoffset = -75;
+    const yoffset = 20;
+    const category = graph?.getNodeAttribute(node, 'category');
+
+    switch (event.original.button) {
+      case 2: {
+        if (typeof category === 'undefined') return;
+
+        const menu = contextMenus[category];
+
+        // generate context menus content
+        const element = document.createElement('div');
+        element.className = 'webGraphCM';
+        element.style.top = event.y + yoffset + 'px';
+        element.style.left = event.x + xoffset + 'px';
+
+        const contextMenuContent = document.createElement('ol');
+        const childs = menu.map((ci) => {
+          const item: HTMLElement = document.createElement('li');
+          const label: HTMLElement = document.createElement('span');
+
+          // set label
+          label.innerHTML = ci.label;
+
+          // set click listener
+          item.addEventListener('click', () => {
+            ci.callback(node.toString());
+
+            // hide the context menu that's open
+            element.remove();
+          });
+
+          item.appendChild(label);
+          return item;
+        });
+        contextMenuContent.append(...childs);
+        element.appendChild(contextMenuContent);
+
+        webGraphContainer.prepend(element);
+
+        const removeListener = () => {
+          element.remove();
+          webGraphContainer?.removeEventListener('click', removeListener);
+        };
+
+        webGraphContainer?.addEventListener('click', removeListener);
+        break;
+      }
+    }
   });
+
+  webGraph.on('mousedown', (e) => console.log('mousedown:', e));
+  webGraph.on('mouseenter', (e) => console.log('mouseenter:', e));
+  webGraph.on('mouseleave', (e) => console.log('mouseleave:', e));
+  webGraph.on('mousemove', (e) => console.log('mousemove:', e));
 
   webGraph.render();
 }

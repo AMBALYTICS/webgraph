@@ -91,12 +91,12 @@ describe('test public methods of the WebGraph class', () => {
       const container = document.createElement('div');
 
       const includeImportantNeighbors = !DEFAULT_GRAPH_CONFIGURATION.includeImportantNeighbors;
-      const suppressContextMenu = !DEFAULT_GRAPH_CONFIGURATION.suppressContextMenu;
+      // const suppressContextMenu = !DEFAULT_GRAPH_CONFIGURATION.suppressContextMenu;
       const labelFont = 'RANDOM FONT';
 
       const config = {
         includeImportantNeighbors: includeImportantNeighbors,
-        suppressContextMenu: suppressContextMenu,
+        // suppressContextMenu: suppressContextMenu,
         sigmaSettings: {
           labelFont: labelFont,
         },
@@ -109,7 +109,7 @@ describe('test public methods of the WebGraph class', () => {
         JSON.stringify(DEFAULT_GRAPH_CONFIGURATION)
       );
       finalConfig.includeImportantNeighbors = includeImportantNeighbors;
-      finalConfig.suppressContextMenu = suppressContextMenu;
+      // finalConfig.suppressContextMenu = suppressContextMenu;
       finalConfig.sigmaSettings.labelFont = labelFont;
 
       expect(webGraph['configuration']).toEqual(finalConfig);
