@@ -34,32 +34,31 @@ import { ActionType, HistoryManager } from './History';
 import drawLabel from './Canvas/label';
 import { InternalUtils } from '../Utils';
 import EventEmitter from 'events';
+import TypedEmitter from "typed-emitter";
 import isGraph from 'graphology-utils/is-graph';
+
+interface MessageEvents {
+  rendered: () => void,
+  syncLayoutCompleted: () => void,
+  initialFA2wwStarted: () => void,
+  initialFA2wwCompleted: () => void,
+  clickNode: (args: { node: NodeKey; event: Event }) => void,
+  rightClickNode: (args: { node: NodeKey; event: Event }) => void,
+  dragNode: (args: { node: NodeKey; event: Event }) => void,
+  draggedNode: (args: { node: NodeKey; event: Event }) => void,
+  enterNode: (args: { node: NodeKey }) => void,
+  leaveNode: (args: { node: NodeKey }) => void,
+  nodeInfoBoxClosed: (args: { byRightClick: boolean }) => void,
+  contextMenuOpened: (args: { node: NodeKey; posTop: number; posLeft: number; event: Event }) => void,
+  contextMenuClosed: (args: { contextNode?: NodeKey; event: Event }) => void
+}
 
 /**
  * The WebGraph class represents the main endpoint of the module.
  *
- * Events to listen for:
- * - "rendered" | When the graph has been rendered
- * - "syncLayoutCompleted" | When the synchronous calculated layout animation is completed
- * - "initialFA2wwStarted" | Initial ForceAtlas2 web worker rendering started
- * - "initialFA2wwCompleted" | Initial ForceAtlas2 web worker rendering completed
- *
- * - "clickNode" | Click on node (mouse button 0 or 1)
- * - "rightClickNode" | Right click on node (mouse button 2)
- * - "dragNode" | Drag of node (using mouse button 0 or 1)
- * - "draggedNode" | Node has been dragged (using mouse button 0 or 1)
- * - "enterNode" | Hover over a node (enter)
- * - "leaveNode" | Hover over a node (leave)
- *
- * - "nodeInfoBoxOpened" | When the node info box has been opened
- * - "nodeInfoBoxClosed" | When the node info box has been closed
- * - "contextMenuOpened" | When the context menu has been opened
- * - "contextMenuClosed" | When the context menu has been closed
- *
  * {@label WebGraph}
  */
-class WebGraph extends EventEmitter {
+class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
   private container: HTMLElement;
   private graphData: Graph;
   private configuration: IGraphConfiguration;

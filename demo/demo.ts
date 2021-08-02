@@ -225,9 +225,6 @@ async function drawFullGraph(graphDataJSON: any[]) {
   webGraph.on('enterNode', (e) => console.log('enterNode: ', e));
   webGraph.on('leaveNode', (e) => console.log('leaveNode: ', e));
 
-  webGraph.on('nodeInfoBoxOpened', (e) =>
-    console.log('nodeInfoBoxOpened: ', e)
-  );
   webGraph.on('nodeInfoBoxClosed', (e) =>
     console.log('nodeInfoBoxClosed: ', e)
   );
