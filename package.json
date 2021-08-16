@@ -70,6 +70,13 @@
     "webpack-dev-server": "^3.11.2",
     "semantic-release": "^17.4.5"
   },
+  "jest": {
+    "collectCoverage": true,
+    "coverageReporters": [
+      "json",
+      "lcov"
+    ]
+  },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
