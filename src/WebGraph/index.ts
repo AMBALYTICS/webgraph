@@ -207,8 +207,10 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
     if (this.isHistoryEnabled) this.history = new HistoryManager();
 
     this.isEdgeRenderingDisabled = this.renderer.settings.hideEdges;
-    this.isJustImportantEdgesEnabled = this.renderer.settings.renderJustImportantEdges;
-    this.isNodeBackdropRenderingEnabled = this.renderer.settings.renderNodeBackdrop;
+    this.isJustImportantEdgesEnabled =
+      this.renderer.settings.renderJustImportantEdges;
+    this.isNodeBackdropRenderingEnabled =
+      this.renderer.settings.renderNodeBackdrop;
 
     this.emit('rendered');
   }
@@ -480,7 +482,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
     addToHistory = true
   ): boolean {
     const edgeSetForHistory: Set<SerializedEdge> = new Set<SerializedEdge>();
-    const nodeArrayForHistory: Array<SerializedNode> = new Array<SerializedNode>();
+    const nodeArrayForHistory: Array<SerializedNode> =
+      new Array<SerializedNode>();
 
     nodes.forEach((node) => {
       const key: string =
@@ -675,8 +678,10 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
     }
 
     this.isNodeBackdropRenderingEnabled = !this.isNodeBackdropRenderingEnabled;
-    this.renderer.settings.renderNodeBackdrop = this.isNodeBackdropRenderingEnabled;
-    this.configuration.sigmaSettings.renderNodeBackdrop = this.isNodeBackdropRenderingEnabled;
+    this.renderer.settings.renderNodeBackdrop =
+      this.isNodeBackdropRenderingEnabled;
+    this.configuration.sigmaSettings.renderNodeBackdrop =
+      this.isNodeBackdropRenderingEnabled;
 
     this.renderer.needToProcess = true;
     this.renderer.scheduleRender();
@@ -1160,7 +1165,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    * @internal
    */
   private overwriteNodePrograms(): void {
-    this.configuration.sigmaSettings.defaultNodeType = this.configuration.defaultNodeType;
+    this.configuration.sigmaSettings.defaultNodeType =
+      this.configuration.defaultNodeType;
 
     this.configuration.sigmaSettings.nodeProgramClasses = {
       ring: NodeRingProgram,
