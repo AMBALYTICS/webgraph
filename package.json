@@ -44,7 +44,7 @@
     "events": "^3.3.0",
     "graphology": "^0.19.3",
     "graphology-utils": "^1.8.0",
-    "sigma": "robinerol/sigma.js#v2"
+    "sigma": "github:robinerol/sigma.js#v2"
   },
   "devDependencies": {
     "@types/jest": "^26.0.20",
