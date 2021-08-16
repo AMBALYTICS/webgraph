@@ -1,6 +1,6 @@
 {
   "name": "@ambalytics/webgraph",
-  "version": "0.0.1",
+  "version": "0.0.2-alpha.0",
   "description": "A graph drawing component using sigma.js and graphology.",
   "main": "lib/index.js",
   "scripts": {
