@@ -9,14 +9,20 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      - uses: actions/checkout@v2
         with:
-          fetch-depth: 0
-      - name: Setup Node.js
-        uses: actions/setup-node@v1
+          persist-credentials: false
+      # See: https://github.com/actions/setup-node/issues/214#issuecomment-810829250
+      - name: Reconfigure git to use HTTP authentication
+        run: >
+          git config --global url."https://github.com/".insteadOf "ssh://git@github.com/"
+      - name: Setup Node.js environment
+        uses: actions/setup-node@v2
+        with:
+          node-version: 15
       - name: Install dependencies
-        run: npm ci
+        run: |
+          npm ci
       - name: Build
         run: npm run build
       - name: Release
