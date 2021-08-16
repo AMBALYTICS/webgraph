@@ -158,8 +158,8 @@ describe('test public methods of the WebGraph class', () => {
       const webGraph = new WebGraph(container, new Graph(), {
         enableHistory: true,
       });
-      spyOn<any>(webGraph, 'overwriteRenderSettings');
-      spyOn<any>(webGraph, 'initializeEventHandlers');
+      jest.spyOn<WebGraph, any>(webGraph, 'overwriteRenderSettings');
+      jest.spyOn<WebGraph, any>(webGraph, 'initializeEventHandlers');
 
       expect(webGraph['history']).toBeUndefined;
 
