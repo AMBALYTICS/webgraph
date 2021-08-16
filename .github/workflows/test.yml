@@ -1,6 +1,6 @@
 name: Test
 on:
-  push:
+  pull_request:
     branches:
       - master
       - next
@@ -28,3 +28,4 @@ jobs:
           npm ci
       - run: npm run prettier:check
       - run: npm run test
+      - run: npm run build
