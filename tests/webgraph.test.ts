@@ -90,7 +90,8 @@ describe('test public methods of the WebGraph class', () => {
     it('should apply configurations correctly', () => {
       const container = document.createElement('div');
 
-      const includeImportantNeighbors = !DEFAULT_GRAPH_CONFIGURATION.includeImportantNeighbors;
+      const includeImportantNeighbors =
+        !DEFAULT_GRAPH_CONFIGURATION.includeImportantNeighbors;
       // const suppressContextMenu = !DEFAULT_GRAPH_CONFIGURATION.suppressContextMenu;
       const labelFont = 'RANDOM FONT';
 
