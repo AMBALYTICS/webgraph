@@ -9,7 +9,7 @@ enum LabelSelector {
    *
    * {@label ALL}
    */
-  ALL = "all",
+  ALL = 'all',
 
   /**
    * Selects nodes in four zoom levels. The most important ones first,
@@ -17,14 +17,14 @@ enum LabelSelector {
    *
    * {@label LEVELS}
    */
-  LEVELS = "levels",
+  LEVELS = 'levels',
 
   /**
    * Selects all nodes which have the attribute important set to true.
    *
    * {@label IMPORTANT}
    */
-  IMPORTANT = "important",
+  IMPORTANT = 'important',
 
   /**
    * Selects nodes according to a grid based heuristic. For further details:
@@ -32,7 +32,7 @@ enum LabelSelector {
    *
    * {@label SIGMA}
    */
-  SIGMA = "sigma",
+  SIGMA = 'sigma',
 }
 
 export { LabelSelector };

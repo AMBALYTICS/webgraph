@@ -1,4 +1,4 @@
-import { Action, ActionType, IActionPayload } from "./action";
+import { Action, ActionType, IActionPayload } from './action';
 
 /**
  * Manages the history by holding and altering the latest not reverted action.
@@ -87,5 +87,5 @@ class HistoryManager {
   }
 }
 
-export * from "./action";
+export * from './action';
 export { HistoryManager };

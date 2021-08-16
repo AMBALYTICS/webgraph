@@ -5,11 +5,11 @@
  * {@see https://github.com/jacomyal/sigma.js/blob/v2/src/renderers/webgl/programs/node.fast.ts}
  */
 
-import { RenderNodeParams } from "sigma/types/renderers/webgl/programs/common/node";
-import { AbstractNodeProgram, floatColor } from "sigma";
-import { NodeAttributes } from "sigma/types/types";
-import vertexShaderSource from "../Shader/node.backdrop.vert.glsl";
-import fragmentShaderSource from "../Shader/node.backdrop.frag.glsl";
+import { RenderNodeParams } from 'sigma/types/renderers/webgl/programs/common/node';
+import { AbstractNodeProgram, floatColor } from 'sigma';
+import { NodeAttributes } from 'sigma/types/types';
+import vertexShaderSource from '../Shader/node.backdrop.vert.glsl';
+import fragmentShaderSource from '../Shader/node.backdrop.frag.glsl';
 
 const POINTS = 1,
   ATTRIBUTES = 4;
@@ -21,9 +21,9 @@ class NodeBackdropProgram extends AbstractNodeProgram {
 
   process(data: NodeAttributes, offset: number): void {
     if (data.color === undefined) {
-      data.color = "#d9f9c0";
+      data.color = '#d9f9c0';
       console.error(
-        "Attempted to render clusters, but no color for this cluster was given. Using default color."
+        'Attempted to render clusters, but no color for this cluster was given. Using default color.'
       );
     }
 

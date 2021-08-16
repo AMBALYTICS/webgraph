@@ -1,4 +1,4 @@
-import Graph from "graphology";
+import Graph from 'graphology';
 import {
   SerializedGraph,
   SerializedNode,
@@ -6,70 +6,56 @@ import {
   EdgeKey,
   NodeKey,
   Attributes,
-} from "graphology-types";
-import { circular, circlepack, random } from "graphology-layout";
-import randomLayout, { RandomLayoutOptions } from "graphology-layout/random";
-import circularLayout, {
-  CircularLayoutOptions,
-} from "graphology-layout/circular";
-import circlePackLayout, {
-  CirclePackLayoutOptions,
-} from "graphology-layout/circlepack";
-import forceatlas2Layout from "graphology-layout-forceatlas2";
-import { Camera, WebGLRenderer, animateNodes, easings } from "sigma";
-import { PartialButFor } from "sigma/types/utils";
-import { WebGLSettings } from "sigma/types/renderers/webgl/settings";
-import { NodeAttributes, EdgeAttributes } from "sigma/types/types";
-import { AppState } from "./appstate";
+} from 'graphology-types';
+import { Camera, WebGLRenderer, animateNodes, easings } from 'sigma';
+import { PartialButFor } from 'sigma/types/utils';
+import { WebGLSettings } from 'sigma/types/renderers/webgl/settings';
+import { NodeAttributes, EdgeAttributes } from 'sigma/types/types';
+import { AppState } from './appstate';
 import {
   DEFAULT_GRAPH_CONFIGURATION,
   IGraphConfiguration,
   Layout,
-  ILayoutConfiguration,
-  DEFAULT_FORCEATLAS2_LAYOUT_OPTIONS,
   AppMode,
   NodeType,
   LabelSelector,
-  INodeInfoBox,
-} from "../Configuration";
-import drawHover from "./Canvas/hover";
+  LayoutOptions,
+} from '../Configuration';
+import drawHover from './Canvas/hover';
 import {
   NodeRingProgram,
   NodeCircleProgram,
   NodeRectangleProgram,
   NodeTriangleProgram,
   NodeBackdropProgram,
-} from "./WebGL";
-import { ActionType, HistoryManager } from "./History";
-import drawLabel from "./Canvas/label";
-import { InternalUtils } from "../Utils";
-import FA2Layout from "graphology-layout-forceatlas2/worker";
-import EventEmitter from "events";
+} from './WebGL';
+import { ActionType, HistoryManager } from './History';
+import drawLabel from './Canvas/label';
+import { InternalUtils } from '../Utils';
+import EventEmitter from 'events';
+import TypedEmitter from 'typed-emitter';
+import isGraph from 'graphology-utils/is-graph';
+
+interface MessageEvents {
+  rendered: () => void;
+  syncLayoutCompleted: () => void;
+  click: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mousedown: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mouseenter: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mouseleave: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+  mousemove: (args: { node: NodeKey; event: ExtendedMouseEvent }) => void;
+}
+
+interface ExtendedMouseEvent extends MouseEvent {
+  original: MouseEvent;
+}
 
 /**
  * The WebGraph class represents the main endpoint of the module.
  *
- * Events to listen for:
- * - "rendered" | When the graph has been rendered
- * - "syncLayoutCompleted" | When the synchronous calculated layout animation is completed
- * - "initialFA2wwStarted" | Initial ForceAtlas2 web worker rendering started
- * - "initialFA2wwCompleted" | Initial ForceAtlas2 web worker rendering completed
- *
- * - "clickNode" | Click on node (mouse button 0 or 1)
- * - "rightClickNode" | Right click on node (mouse button 2)
- * - "dragNode" | Drag of node (using mouse button 0 or 1)
- * - "draggedNode" | Node has been dragged (using mouse button 0 or 1)
- * - "enterNode" | Hover over a node (enter)
- * - "leaveNode" | Hover over a node (leave)
- *
- * - "nodeInfoBoxOpened" | When the node info box has been opened
- * - "nodeInfoBoxClosed" | When the node info box has been closed
- * - "contextMenuOpened" | When the context menu has been opened
- * - "contextMenuClosed" | When the context menu has been closed
- *
  * {@label WebGraph}
  */
-class WebGraph extends EventEmitter {
+class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
   private container: HTMLElement;
   private graphData: Graph;
   private configuration: IGraphConfiguration;
@@ -78,12 +64,8 @@ class WebGraph extends EventEmitter {
   private highlightedNodes: Set<NodeKey> = new Set<NodeKey>();
   private highlightedEdges: Set<EdgeKey> = new Set<EdgeKey>();
   private hoveredNode: NodeKey | undefined = undefined;
-  private isNodeInfoBoxContainerVisible = false;
-  private isNodeDragged = false;
   private isHistoryEnabled = false;
   private history: HistoryManager | undefined = undefined;
-  private forceAtlas2WebWorker: FA2Layout | undefined = undefined;
-  private isForceAtlas2WebWorkerActive = false;
   private isEdgeRenderingDisabled = false;
   private isJustImportantEdgesEnabled = false;
   private isNodeBackdropRenderingEnabled = false;
@@ -134,10 +116,10 @@ class WebGraph extends EventEmitter {
 
     this.container = container;
 
-    if (graphData instanceof Graph) {
-      this.graphData = graphData;
+    if (isGraph(graphData)) {
+      this.graphData = graphData as Graph;
     } else {
-      this.graphData = Graph.from(graphData);
+      this.graphData = Graph.from(graphData as SerializedGraph);
     }
 
     this.configuration = {
@@ -206,34 +188,9 @@ class WebGraph extends EventEmitter {
    * @public
    */
   public render(): void {
-    if (this.isRenderingActive) throw new Error("Already rendering.");
+    if (this.isRenderingActive) throw new Error('Already rendering.');
 
     this.appState = AppState.ACTIVE;
-
-    if (
-      this.configuration.initializeForceAtlas2WebWorker &&
-      this.configuration.layoutConfiguration.forceAtlas2LayoutOptions
-        ?.initialWebWorkerRuntime
-    ) {
-      // initialize ForceAtlas2 Web Worker and also start it
-      this.initializeForceAtlas2WebWorker(true);
-    } else if (this.configuration.initializeForceAtlas2WebWorker) {
-      // initialize ForceAtlas2 Web Worker but don't start it
-      this.initializeForceAtlas2WebWorker(false);
-
-      this.applyLayout(
-        this.configuration.layout,
-        this.configuration.layoutConfiguration,
-        true
-      );
-    } else {
-      // don't use the forceatlas2 web worker
-      this.applyLayout(
-        this.configuration.layout,
-        this.configuration.layoutConfiguration,
-        true
-      );
-    }
 
     this.overwriteRenderSettings();
 
@@ -253,7 +210,7 @@ class WebGraph extends EventEmitter {
     this.isJustImportantEdgesEnabled = this.renderer.settings.renderJustImportantEdges;
     this.isNodeBackdropRenderingEnabled = this.renderer.settings.renderNodeBackdrop;
 
-    this.emit("rendered");
+    this.emit('rendered');
   }
 
   /**
@@ -285,7 +242,6 @@ class WebGraph extends EventEmitter {
    */
   public mergeEdges(edges: Set<SerializedEdge>, addToHistory = true): boolean {
     if (edges.size <= 0) return false;
-    if (this.isForceAtlas2WebWorkerActive) return false;
 
     const existingEdges = new Set<SerializedEdge>();
 
@@ -349,8 +305,6 @@ class WebGraph extends EventEmitter {
     edges: Set<SerializedEdge>,
     addToHistory = true
   ): boolean {
-    if (this.isForceAtlas2WebWorkerActive) return false;
-
     if (this.isHistoryEnabled && addToHistory) {
       const existingEdges = new Set<SerializedEdge>();
 
@@ -464,7 +418,6 @@ class WebGraph extends EventEmitter {
     addToHistory = true
   ): boolean {
     if (nodes.length <= 0) return false;
-    if (this.isForceAtlas2WebWorkerActive) return false;
 
     const existingNodes = new Array<SerializedNode>();
 
@@ -504,7 +457,7 @@ class WebGraph extends EventEmitter {
     if (!addToHistory) {
       nodes.forEach((node) => {
         this.graphData.forEachEdge(node.key, (edge) => {
-          this.graphData.setEdgeAttribute(edge, "hidden", false);
+          this.graphData.setEdgeAttribute(edge, 'hidden', false);
         });
       });
     }
@@ -526,14 +479,12 @@ class WebGraph extends EventEmitter {
     nodes: Array<NodeKey | SerializedNode>,
     addToHistory = true
   ): boolean {
-    if (this.isForceAtlas2WebWorkerActive) return false;
-
     const edgeSetForHistory: Set<SerializedEdge> = new Set<SerializedEdge>();
     const nodeArrayForHistory: Array<SerializedNode> = new Array<SerializedNode>();
 
     nodes.forEach((node) => {
       const key: string =
-        typeof node === "number" || typeof node === "string"
+        typeof node === 'number' || typeof node === 'string'
           ? node.toString()
           : (<SerializedNode>node).key.toString();
 
@@ -559,9 +510,6 @@ class WebGraph extends EventEmitter {
           });
         }
       });
-
-      // hide the node info box container
-      this.hideNodeInfoBoxContainer();
 
       // add to history set
       if (this.isHistoryEnabled && addToHistory) {
@@ -594,26 +542,32 @@ class WebGraph extends EventEmitter {
   }
 
   /**
-   * Highlights a node for a specified duration.
+   * Highlights a node.
    *
    * @param nodeKey - The key of the node to highlight
-   * @param duration - The duration of the highlight in milliseconds
    *
    * @public
    */
-  public highlightNode(nodeKey: NodeKey, duration: number): void {
+  public highlightNode(nodeKey: NodeKey): void {
     this.renderer?.highlightNode(nodeKey);
+  }
 
-    setTimeout(() => {
-      this.renderer?.unhighlightNode(nodeKey);
-    }, duration);
+  /**
+   * Unhighlights a node.
+   *
+   * @param nodeKey - The key of the node to highlight
+   *
+   * @public
+   */
+  public unhighlightNode(nodeKey: NodeKey): void {
+    this.renderer?.unhighlightNode(nodeKey);
   }
 
   /**
    * Sets and applies the requested layout to the graph.
    *
    * @param layout - The {@link Layout} to be set and applied
-   * @param layoutConfiguration - The {@link ILayoutConfiguration} of the layout
+   * @param layoutOptions - The {@link LayoutOptions} of the layout
    * @param [addToHistory] - True by default. Whether the action should be added to the history or not. @defaultValue `true`
    *
    * @returns - true if successful
@@ -622,241 +576,30 @@ class WebGraph extends EventEmitter {
    */
   public setAndApplyLayout(
     layout: Layout,
-    layoutConfiguration: ILayoutConfiguration,
+    layoutOptions?: LayoutOptions,
     addToHistory = true
   ): boolean {
-    if (this.isForceAtlas2WebWorkerActive) return false;
+    const oldLayoutMapping =
+      this.isHistoryEnabled && addToHistory
+        ? InternalUtils.exportLayoutMapping(this.graphData)
+        : undefined;
+
+    this.applyLayout(layout, layoutOptions);
 
     if (this.isHistoryEnabled && addToHistory) {
-      const oldLayout = this.configuration.layout;
-      const layoutMapping: { [key: string]: { x: number; y: number } } = {};
-
-      if (oldLayout === Layout.FORCEATLAS2 || layout === Layout.FORCEATLAS2) {
-        this.graphData.nodes().forEach((node) => {
-          const attr = this.graphData.getNodeAttributes(node);
-          layoutMapping[node] = { x: attr.x, y: attr.y };
-        });
-      }
+      const newLayoutMapping = InternalUtils.exportLayoutMapping(
+        this.graphData
+      );
 
       this.history?.addAction(
         {
-          layout: oldLayout,
-          layoutConfig: this.configuration.layoutConfiguration,
-          layoutMapping: layoutMapping,
+          layoutMapping: oldLayoutMapping,
         },
         ActionType.SET_LAYOUT,
         {
-          layout: layout,
-          layoutConfig: layoutConfiguration,
+          layoutMapping: newLayoutMapping,
         }
       );
-    }
-
-    this.configuration.layout = layout;
-    this.configuration.layoutConfiguration = layoutConfiguration;
-
-    this.applyLayout(layout, layoutConfiguration, false);
-
-    return true;
-  }
-
-  /**
-   * Applies the currently set layout again. Used for clustering algorithms.
-   * If the currently active {@link Layout} is {@link FORCEATLAS2}, the
-   * preAppliedLayout and preAppliedLayoutOptions will be overwritten
-   * with undefined.
-   *
-   * @param [addToHistory] - True by default. Whether the action should be added to the history or not. @defaultValue `true`
-   *
-   * @returns - true if successful
-   *
-   * @public
-   */
-  public reapplyLayout(addToHistory = true): boolean {
-    if (this.isForceAtlas2WebWorkerActive) return false;
-
-    if (
-      this.configuration.layout === Layout.FORCEATLAS2 &&
-      this.configuration.layoutConfiguration.forceAtlas2LayoutOptions
-    ) {
-      this.configuration.layoutConfiguration.forceAtlas2LayoutOptions.preAppliedLayout = undefined;
-      this.configuration.layoutConfiguration.forceAtlas2LayoutOptions.preAppliedLayoutOptions = undefined;
-    }
-
-    if (this.isHistoryEnabled && addToHistory) {
-      const oldLayout = this.configuration.layout;
-      const layoutMapping: { [key: string]: { x: number; y: number } } = {};
-
-      if (oldLayout === Layout.FORCEATLAS2) {
-        this.graphData.nodes().forEach((node) => {
-          const attr = this.graphData.getNodeAttributes(node);
-          layoutMapping[node] = { x: attr.x, y: attr.y };
-        });
-      }
-
-      this.history?.addAction(
-        {
-          layout: oldLayout,
-          layoutConfig: this.configuration.layoutConfiguration,
-          layoutMapping: layoutMapping,
-        },
-        ActionType.SET_LAYOUT,
-        {
-          layout: oldLayout,
-          layoutConfig: this.configuration.layoutConfiguration,
-        }
-      );
-    }
-
-    this.applyLayout(
-      this.configuration.layout,
-      this.configuration.layoutConfiguration,
-      false
-    );
-
-    return true;
-  }
-
-  /**
-   * Starts the ForceAtlas2 web worker. Please be aware that just the initial and final position of the nodes
-   * can be tracked by history. Intermediate results are not logged!
-   *
-   * @param [addToHistory] - True by default. Whether the action should be added to the history or not. @defaultValue `true`
-   *
-   * @throws Error - If the renderer is not defined or the 'initializeForceAtlas2WebWorker' is not enabled
-   *
-   * @returns - True if successful
-   *
-   * @public
-   */
-  public startForceAtlas2WebWorker(addToHistory = true): boolean {
-    if (!this.renderer || !this.isRenderingActive) {
-      throw new Error(
-        "Can't retrieve ForceAtlas2 web worker when rendering is inactive."
-      );
-    }
-
-    if (!this.configuration.initializeForceAtlas2WebWorker) {
-      throw new Error(
-        "ForceAtlas2 web worker was not enabled. Use the 'initializeForceAtlas2WebWorker' configuration to enable it."
-      );
-    }
-
-    if (!this.forceAtlas2WebWorker) return false;
-
-    if (this.isHistoryEnabled && addToHistory) {
-      const oldLayout = this.configuration.layout;
-      const layoutMapping: { [key: string]: { x: number; y: number } } = {};
-
-      this.graphData.nodes().forEach((node) => {
-        const attr = this.graphData.getNodeAttributes(node);
-        layoutMapping[node] = { x: attr.x, y: attr.y };
-      });
-
-      this.history?.addAction(
-        {
-          layout: oldLayout,
-          layoutConfig: this.configuration.layoutConfiguration,
-          layoutMapping: layoutMapping,
-        },
-        ActionType.SET_LAYOUT_WEB_WORKER,
-        {}
-      );
-    }
-
-    this.configuration.layout = Layout.FORCEATLAS2;
-
-    this.forceAtlas2WebWorker.start();
-    this.isForceAtlas2WebWorkerActive = true;
-
-    return true;
-  }
-
-  /**
-   * Stops the ForceAtlas2 web worker. Please be aware that just the initial and final position of the nodes
-   * can be tracked by history. Intermediate results are not logged!
-   *
-   * @param [addToHistory] - True by default. Whether the action should be added to the history or not. @defaultValue `true`
-   *
-   * @throws Error - If the renderer is not defined or the 'initializeForceAtlas2WebWorker' is not enabled
-   *
-   * @returns - True if successful
-   *
-   * @public
-   */
-  public stopForceAtlas2WebWorker(addToHistory = true): boolean {
-    if (!this.renderer || !this.isRenderingActive) {
-      throw new Error(
-        "Can't retrieve ForceAtlas2 web worker when rendering is inactive."
-      );
-    }
-
-    if (!this.configuration.initializeForceAtlas2WebWorker) {
-      throw new Error(
-        "ForceAtlas2 web worker was not enabled. Use the 'initializeForceAtlas2WebWorker' configuration to enable it."
-      );
-    }
-
-    if (!this.forceAtlas2WebWorker) return false;
-
-    this.forceAtlas2WebWorker.stop();
-    this.isForceAtlas2WebWorkerActive = false;
-
-    if (this.isHistoryEnabled && addToHistory) {
-      const layoutMapping: { [key: string]: { x: number; y: number } } = {};
-
-      this.graphData.nodes().forEach((node) => {
-        const attr = this.graphData.getNodeAttributes(node);
-        layoutMapping[node] = { x: attr.x, y: attr.y };
-      });
-
-      const latestAction = this.history?.getLatestAction();
-
-      if (
-        latestAction &&
-        latestAction.actionType === ActionType.SET_LAYOUT_WEB_WORKER
-      ) {
-        latestAction.newData = {
-          layout: Layout.FORCEATLAS2,
-          layoutMapping: layoutMapping,
-        };
-      }
-    }
-
-    return true;
-  }
-
-  /**
-   * Starts/stops the ForceAtlas2 web worker. Please be aware that just the initial and final position of the nodes
-   * can be tracked by history. Intermediate results are not logged!
-   *
-   * @param [addToHistory] - True by default. Whether the action should be added to the history or not. @defaultValue `true`
-   *
-   * @throws Error - If the renderer is not defined or the 'initializeForceAtlas2WebWorker' is not enabled
-   *
-   * @returns - True if successful
-   *
-   * @public
-   */
-  public toggleForceAtlas2WebWorker(addToHistory = true): boolean {
-    if (!this.renderer || !this.isRenderingActive) {
-      throw new Error(
-        "Can't retrieve ForceAtlas2 web worker when rendering is inactive."
-      );
-    }
-
-    if (!this.configuration.initializeForceAtlas2WebWorker) {
-      throw new Error(
-        "ForceAtlas2 web worker was not enabled. Use the 'initializeForceAtlas2WebWorker' configuration to enable it."
-      );
-    }
-
-    if (!this.forceAtlas2WebWorker) return false;
-
-    if (this.isForceAtlas2WebWorkerActive) {
-      this.stopForceAtlas2WebWorker(addToHistory);
-    } else {
-      this.startForceAtlas2WebWorker(addToHistory);
     }
 
     return true;
@@ -958,7 +701,7 @@ class WebGraph extends EventEmitter {
   public undo(): boolean {
     if (!this.renderer || !this.isRenderingActive) {
       throw new Error(
-        "This operation is not possible if rendering is inactive."
+        'This operation is not possible if rendering is inactive.'
       );
     }
 
@@ -967,8 +710,6 @@ class WebGraph extends EventEmitter {
         "The history is not enabled. Use the 'enableHistory' boolean to enable it in the IGraphConfiguration."
       );
     }
-
-    if (this.isForceAtlas2WebWorkerActive) return false;
 
     const latestAction = this.history?.getLatestAction();
     if (!latestAction) return false;
@@ -1041,40 +782,11 @@ class WebGraph extends EventEmitter {
         break;
 
       case ActionType.SET_LAYOUT:
-        if (
-          !latestAction.oldData.layout ||
-          !latestAction.oldData.layoutConfig ||
-          !latestAction.oldData.layoutMapping
-        ) {
+        if (!latestAction.oldData.layoutMapping) {
           return false;
         }
 
-        if (latestAction.oldData.layout === Layout.FORCEATLAS2) {
-          this.animateGraph(this.graphData, latestAction.oldData.layoutMapping);
-          break;
-        }
-
-        this.setAndApplyLayout(
-          latestAction.oldData.layout,
-          latestAction.oldData.layoutConfig,
-          false
-        );
-        break;
-
-      case ActionType.SET_LAYOUT_WEB_WORKER:
-        if (
-          !latestAction.oldData.layout ||
-          !latestAction.oldData.layoutConfig ||
-          !latestAction.oldData.layoutMapping
-        ) {
-          return false;
-        }
-
-        this.configuration.layout = latestAction.oldData.layout;
-        this.configuration.layoutConfiguration =
-          latestAction.oldData.layoutConfig;
         this.animateGraph(this.graphData, latestAction.oldData.layoutMapping);
-
         break;
     }
 
@@ -1099,7 +811,7 @@ class WebGraph extends EventEmitter {
   public redo(): boolean {
     if (!this.renderer || !this.isRenderingActive) {
       throw new Error(
-        "This operation is not possible if rendering is inactive."
+        'This operation is not possible if rendering is inactive.'
       );
     }
 
@@ -1108,8 +820,6 @@ class WebGraph extends EventEmitter {
         "The history is not enabled. Use the 'enableHistory' boolean to enable it in the IGraphConfiguration."
       );
     }
-
-    if (this.isForceAtlas2WebWorkerActive) return false;
 
     const latestRevertedAction = this.history?.getLatestRevertedAction();
     if (!latestRevertedAction) return false;
@@ -1169,33 +879,13 @@ class WebGraph extends EventEmitter {
         break;
 
       case ActionType.SET_LAYOUT:
-        if (
-          !latestRevertedAction.newData.layout ||
-          !latestRevertedAction.newData.layoutConfig
-        ) {
+        if (!latestRevertedAction.newData.layoutMapping) {
           return false;
         }
-        this.setAndApplyLayout(
-          latestRevertedAction.newData.layout,
-          latestRevertedAction.newData.layoutConfig,
-          false
-        );
-        break;
-
-      case ActionType.SET_LAYOUT_WEB_WORKER:
-        if (
-          !latestRevertedAction.newData.layout ||
-          !latestRevertedAction.newData.layoutMapping
-        ) {
-          return false;
-        }
-
-        this.configuration.layout = latestRevertedAction.newData.layout;
         this.animateGraph(
           this.graphData,
           latestRevertedAction.newData.layoutMapping
         );
-
         break;
     }
 
@@ -1209,8 +899,6 @@ class WebGraph extends EventEmitter {
    * @returns true if history has been successfully cleared, false if not
    */
   public clearHistory(): boolean {
-    if (this.isForceAtlas2WebWorkerActive) return false;
-
     this.history = undefined;
     this.history = new HistoryManager();
 
@@ -1223,11 +911,6 @@ class WebGraph extends EventEmitter {
    * @public
    */
   public destroy(): void {
-    this.forceAtlas2WebWorker?.stop();
-    this.forceAtlas2WebWorker?.kill();
-    this.forceAtlas2WebWorker = undefined;
-    this.isForceAtlas2WebWorkerActive = false;
-
     this.renderer?.clear();
     this.renderer?.kill();
     this.renderer = undefined;
@@ -1283,108 +966,13 @@ class WebGraph extends EventEmitter {
    *
    * @internal
    */
-  private applyLayout(
-    layout: Layout,
-    layoutConfig: ILayoutConfiguration,
-    randomlyInitializeNodes: boolean
-  ): void {
-    // to prevent nodes from having no x and y coordinate, set random x and y when initializing for the first time
-    // this is necessary for the animation to interpolate between two points rather than a point and nothing
-    if (randomlyInitializeNodes && layout !== Layout.PREDEFINED) {
-      random.assign(this.graphData);
+  private applyLayout(layout: Layout, layoutOptions?: LayoutOptions): void {
+    const newLayout = layout(this.graphData, layoutOptions);
+
+    // If layout returned mapping (not used the layout.assign) then animate the graph
+    if (typeof newLayout !== 'undefined') {
+      this.animateGraph(this.graphData, newLayout);
     }
-
-    let newLayout;
-
-    switch (layout) {
-      case Layout.RANDOM:
-        newLayout = randomLayout(
-          this.graphData,
-          layoutConfig.randomLayoutOptions
-        );
-        break;
-
-      case Layout.CIRCULAR:
-        newLayout = circularLayout(
-          this.graphData,
-          layoutConfig.circularLayoutOptions
-        );
-        break;
-
-      case Layout.CIRCLEPACK:
-        newLayout = circlePackLayout(
-          this.graphData,
-          layoutConfig.circlePackLayoutOptions
-        );
-        break;
-
-      case Layout.FORCEATLAS2: {
-        const forceAtlas2LayoutOptions = layoutConfig.forceAtlas2LayoutOptions;
-
-        // if custom layout options are available
-        if (forceAtlas2LayoutOptions) {
-          const preAppliedLayout: Layout | undefined =
-            forceAtlas2LayoutOptions.preAppliedLayout;
-
-          // if another layout should be pre applied to the ForceAtlas2
-          if (preAppliedLayout) {
-            if (preAppliedLayout === Layout.FORCEATLAS2) {
-              throw new Error(
-                "preAppliedLayout for Layout.FORCEATLAS2 can't be Layout.FORCEATLAS2"
-              );
-            }
-
-            const preAppliedLayoutOptions =
-              forceAtlas2LayoutOptions.preAppliedLayoutOptions || {};
-
-            switch (preAppliedLayout) {
-              case Layout.RANDOM:
-                random.assign(
-                  this.graphData,
-                  <RandomLayoutOptions>preAppliedLayoutOptions || {}
-                );
-                break;
-              case Layout.CIRCULAR:
-                circular.assign(
-                  this.graphData,
-                  <CircularLayoutOptions>preAppliedLayoutOptions || {}
-                );
-                break;
-              case Layout.CIRCLEPACK:
-                circlepack.assign(
-                  this.graphData,
-                  <CirclePackLayoutOptions>preAppliedLayoutOptions || {}
-                );
-                break;
-            }
-          }
-
-          newLayout = forceatlas2Layout(
-            this.graphData,
-            forceAtlas2LayoutOptions
-          );
-          break;
-        }
-
-        newLayout = forceatlas2Layout(
-          this.graphData,
-          DEFAULT_FORCEATLAS2_LAYOUT_OPTIONS
-        );
-        break;
-      }
-
-      case Layout.PREDEFINED:
-        /** do nothing */
-        break;
-
-      default:
-        random.assign(this.graphData);
-        break;
-    }
-
-    if (!newLayout || layout === Layout.PREDEFINED) return;
-
-    this.animateGraph(this.graphData, newLayout);
   }
 
   /**
@@ -1402,94 +990,11 @@ class WebGraph extends EventEmitter {
     animateNodes(
       graph,
       mapping,
-      { duration: 1000, easing: easings["cubicInOut"] },
+      { duration: 1000, easing: easings['cubicInOut'] },
       () => {
-        this.emit("syncLayoutCompleted");
+        this.emit('syncLayoutCompleted');
       }
     );
-  }
-
-  /**
-   * Initializes the ForceAtlas2 web worker.
-   *
-   * @param runAfterInitialization - Whether the web worker should be started after initialization
-   *
-   * @internal
-   */
-  private initializeForceAtlas2WebWorker(runAfterInitialization = false): void {
-    if (this.forceAtlas2WebWorker) return;
-
-    // this will overwrite the setImmediate which is not supported widely but used in the graphology library
-    // to work in almost every environment
-    // see: https://developer.mozilla.org/en-US/docs/Web/API/Window/setImmediate
-    // see also: https://stackoverflow.com/questions/52164025/onsenui-uncaught-referenceerror-setimmediate-is-not-defined
-    (window.setImmediate as any) = window.setTimeout; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-    let forceAtlas2LayoutOptions = this.configuration.layoutConfiguration
-      .forceAtlas2LayoutOptions;
-    if (!forceAtlas2LayoutOptions) {
-      forceAtlas2LayoutOptions = DEFAULT_FORCEATLAS2_LAYOUT_OPTIONS;
-    }
-
-    this.forceAtlas2WebWorker = new FA2Layout(this.graphData, {
-      settings: forceAtlas2LayoutOptions?.settings,
-    });
-
-    // if the web worker should be started right after initialization
-    if (
-      runAfterInitialization &&
-      forceAtlas2LayoutOptions &&
-      forceAtlas2LayoutOptions.initialWebWorkerRuntime
-    ) {
-      const preAppliedLayout: Layout | undefined =
-        forceAtlas2LayoutOptions.preAppliedLayout;
-
-      // if another layout should be pre applied to the ForceAtlas2
-      if (preAppliedLayout) {
-        if (preAppliedLayout === Layout.FORCEATLAS2) {
-          throw new Error(
-            "preAppliedLayout for Layout.FORCEATLAS2 can't be Layout.FORCEATLAS2"
-          );
-        }
-
-        switch (preAppliedLayout) {
-          case Layout.RANDOM:
-            random.assign(
-              this.graphData,
-              <RandomLayoutOptions>(
-                forceAtlas2LayoutOptions.preAppliedLayoutOptions
-              ) || {}
-            );
-            break;
-          case Layout.CIRCULAR:
-            circular.assign(
-              this.graphData,
-              <CircularLayoutOptions>(
-                forceAtlas2LayoutOptions.preAppliedLayoutOptions
-              ) || {}
-            );
-            break;
-          case Layout.CIRCLEPACK:
-            circlepack.assign(
-              this.graphData,
-              <CirclePackLayoutOptions>(
-                forceAtlas2LayoutOptions.preAppliedLayoutOptions
-              ) || {}
-            );
-            break;
-        }
-      }
-
-      this.forceAtlas2WebWorker.start();
-      this.isForceAtlas2WebWorkerActive = true;
-      this.emit("initialFA2wwStarted");
-
-      setTimeout(() => {
-        this.forceAtlas2WebWorker?.stop();
-        this.isForceAtlas2WebWorkerActive = false;
-        this.emit("initialFA2wwCompleted");
-      }, forceAtlas2LayoutOptions.initialWebWorkerRuntime);
-    }
   }
 
   /**
@@ -1535,18 +1040,15 @@ class WebGraph extends EventEmitter {
   private overwriteHoverRenderer(): void {
     // if 'disableHover' is set to true, overwrite the hoverRenderer with an empty function
     if (this.configuration.disableHover) {
-      this.configuration.sigmaSettings.hoverRenderer = (_) => _;
+      this.configuration.sigmaSettings.hoverRenderer = () => ({});
       return;
     }
-
-    const nodeInfoBox = this.configuration.nodeInfoBox;
-    const nodeInfoBoxContainer = nodeInfoBox?.container;
 
     this.configuration.sigmaSettings.hoverRenderer = (
       context: CanvasRenderingContext2D,
       data: PartialButFor<
         NodeAttributes,
-        "x" | "y" | "size" | "label" | "color"
+        'x' | 'y' | 'size' | 'label' | 'color'
       >,
       settings: WebGLSettings
     ) => {
@@ -1562,147 +1064,8 @@ class WebGraph extends EventEmitter {
 
       // if no node info callbacks are provided, use the sigma.js library default
       // or if nodeInfoBox should appear on click and not on hover
-      if (
-        !nodeInfoBox ||
-        !nodeInfoBoxContainer ||
-        this.configuration.showNodeInfoBoxOnClick
-      ) {
-        drawHover(context, data, settings, this.configuration);
-        return;
-      }
-
-      if (this.isNodeDragged) return;
-
-      // set the score and category attribute
-      data.score = nodeAttributes.score;
-      data.category = nodeAttributes.category;
-
-      this.generateNodeInfoBox(
-        nodeInfoBox,
-        nodeInfoBoxContainer,
-        data,
-        context,
-        settings
-      );
+      drawHover(context, data, settings, this.configuration);
     };
-
-    // when leaving the hover container, hide it
-    nodeInfoBoxContainer?.addEventListener("mouseleave", () =>
-      this.hideNodeInfoBoxContainer()
-    );
-  }
-
-  /**
-   * Generates a node info box by mounting the INodeInfoBox of the corresponding
-   * node into the given container.
-   *
-   * @param nodeInfoBox - The node info box to display
-   * @param nodeInfoBoxContainer - The container to merge the node info box into
-   * @param data - The nodes attributes the node info box is mounted for
-   * @param [context] - The canvas context the node info box is mounted into
-   * @param [settings] - The sigma.js settings
-   *
-   * @internal
-   */
-  private generateNodeInfoBox(
-    nodeInfoBox: INodeInfoBox,
-    nodeInfoBoxContainer: HTMLElement,
-    data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "label" | "color">,
-    context?: CanvasRenderingContext2D,
-    settings?: WebGLSettings
-  ): void {
-    // if no category is present, return
-    if (data.category === undefined) return;
-
-    // retrieve nodes info callback
-    const nodeInfoCallback = nodeInfoBox.callback[data.category];
-
-    // execute callback
-    nodeInfoCallback(data.key, data.score)
-      .then((result) => {
-        // reset node info box
-        nodeInfoBoxContainer.innerHTML = "";
-
-        let preHeader, header, content, footer;
-
-        if (result.preheader) {
-          preHeader = document.createElement("span");
-          preHeader.setAttribute("id", "preheader");
-          preHeader.innerHTML = result.preheader;
-          nodeInfoBoxContainer.append(preHeader);
-        }
-
-        if (result.header) {
-          header = document.createElement("span");
-          header.setAttribute("id", "header");
-          header.innerHTML = result.header;
-          nodeInfoBoxContainer.append(header);
-        }
-
-        if (result.content) {
-          content = document.createElement("span");
-          content.setAttribute("id", "content");
-          content.innerHTML = result.content;
-          nodeInfoBoxContainer.append(content);
-        }
-
-        if (result.footer) {
-          footer = document.createElement("span");
-          footer.setAttribute("id", "footer");
-          footer.innerHTML = result.footer.toString();
-          nodeInfoBoxContainer.append(footer);
-        }
-
-        // get possible offsets
-        const yoffset = nodeInfoBox.yoffset || 0;
-        const xoffset = nodeInfoBox.xoffset || 0;
-
-        // reposition the hover container and make it visible
-        nodeInfoBoxContainer.style.top = data.y + yoffset + "px";
-        nodeInfoBoxContainer.style.left = data.x + xoffset + "px";
-        nodeInfoBoxContainer.className = nodeInfoBox.cssShow;
-        this.isNodeInfoBoxContainerVisible = true;
-        this.emit("nodeInfoBoxOpened", {
-          data,
-          posTop: data.y + yoffset,
-          posLeft: data.x + xoffset,
-        });
-      })
-      .catch((e) => {
-        console.error(e);
-
-        nodeInfoBoxContainer.className = nodeInfoBox.cssHide;
-        this.isNodeInfoBoxContainerVisible = false;
-
-        if (!context || !settings) return;
-
-        // fallback to the default sigma.js label if unable to execute callback
-        drawHover(context, data, settings, this.configuration);
-      });
-  }
-
-  /**
-   * Hides the node info box container.
-   *
-   * @param [rightClickNode] - Whether a node has been right clicked to open the context menu
-   *
-   * @internal
-   */
-  private hideNodeInfoBoxContainer(rightClickNode?: boolean): void {
-    if (!this.isNodeInfoBoxContainerVisible) return;
-    // if right click on node, continue to hide the node
-    // if not right clicked, but still hovering over the node, return
-    if (!rightClickNode && this.hoveredNode) return;
-
-    const nodeInfoBox = this.configuration.nodeInfoBox;
-
-    if (!nodeInfoBox) return;
-
-    nodeInfoBox.container.className = nodeInfoBox.cssHide;
-    this.isNodeInfoBoxContainerVisible = false;
-    this.emit("nodeInfoBoxClosed", {
-      byRightClick: rightClickNode ? rightClickNode : false,
-    });
   }
 
   /**
@@ -1815,38 +1178,8 @@ class WebGraph extends EventEmitter {
    * @internal
    */
   private initializeEventHandlers(): void {
-    // context menu listeners
-    this.initializeContextMenuListeners();
-
-    // click and drag listeners
-    this.initializeClickAndDragListeners();
-
-    // hover highlight listeners
-    this.initializeHoverHighlightingListeners();
-  }
-
-  /**
-   * Initializes the context menu listeners. Loads all context menus as well as the
-   * "suppressContextMenu" value from the {@link ILayoutConfiguration} and initializes
-   * the listeners. When no {@link IContextMenu} is available, there will be no context
-   * menu on a right click on a node. There's nothing like a default value for the
-   * category attribute, if it is not present. If the category attribute is missing,
-   * the node will not have a context menu.
-   *
-   * @remarks - Regarding {@link IContextMenu}:
-   * The number given in the 'entries' field of a {@link IContextMenu} represents the  node
-   * category the array of {@link IContextMenuItem}s belongs to:
-   * A node with category 0 would get the Array<IContextMenuItem> mapped to 0
-   * A node with category 1 would get the Array<IContextMenuItem> mapped to 1
-   * ...
-   *
-   * @internal
-   */
-  private initializeContextMenuListeners(): void {
-    if (!this.renderer) return;
-
     // handles whether the default context menu is suppressed or not
-    this.container.addEventListener("contextmenu", (event) => {
+    this.container.addEventListener('contextmenu', (event) => {
       const suppressContextMenu = this.configuration.suppressContextMenu;
 
       if (!suppressContextMenu) return;
@@ -1854,106 +1187,54 @@ class WebGraph extends EventEmitter {
       event.preventDefault();
     });
 
-    // load context menus from the active configuration
-    const allContextMenus = this.configuration.contextMenus;
+    // listener that emit events to the customer
+    this.initializeEmittingListeners();
 
-    if (!allContextMenus) return;
+    // click and drag listeners
+    this.initializeNodeDragListeners();
 
-    const cmcontainer = allContextMenus.container;
-    const cssHide = allContextMenus.cssHide;
-    const cssShow = allContextMenus.cssShow;
+    // hover highlight listeners
+    this.initializeHoverHighlightingListeners();
+  }
 
-    let isContextMenuOpen = false;
-    let contextNode: NodeKey | undefined = undefined;
+  private initializeEmittingListeners(): void {
+    const mouseCaptor = this.renderer?.getMouseCaptor();
 
-    this.renderer.on("rightClickNode", ({ node, event }) => {
-      this.emit("rightClickNode", { node, event: event });
-      if (event.original.type !== "contextmenu") return;
-      if (!cmcontainer) return;
-      if (this.graphData.getNodeAttribute(node, "hidden")) return;
+    this.renderer?.on('rightClickNode', (data) => this.emit('click', data));
+    this.renderer?.on('clickNode', (data) => this.emit('click', data));
+    this.renderer?.on('downNode', ({ node, event }) => {
+      this.emit('mousedown', { node, event });
 
-      contextNode = node;
+      if (this.appMode === AppMode.STATIC) return;
 
-      if (isContextMenuOpen) {
-        // hide the context menu that's open
-        cmcontainer.className = cssHide;
-        isContextMenuOpen = false;
-      }
+      // emit mousemove event as long as a node is dragged
+      const handleMouseMove = (e: ExtendedMouseEvent) => {
+        this.emit('mousemove', { node, event: e });
+      };
 
-      event.preventDefault();
+      const handleMouseUp = () => {
+        mouseCaptor?.removeListener('mousemove', handleMouseMove);
+        mouseCaptor?.removeListener('mouseup', handleMouseUp);
+      };
 
-      // retrieve node category
-      const category = this.graphData.getNodeAttribute(node, "category");
-      // if not present, return
-      if (category === undefined) return;
-
-      // retrieve nodes corresponding context menu
-      const contextMenu = allContextMenus.entries[category];
-      if (!contextMenu) return;
-
-      // generate context menus content
-      const contextMenuContent = document.createElement("ol");
-      contextMenu.forEach((ci) => {
-        const item: HTMLElement = document.createElement("li");
-        const label: HTMLElement = document.createElement("span");
-
-        // set label
-        label.innerHTML = ci.label;
-
-        // set click listener
-        item.addEventListener("click", () => {
-          ci.callback(node);
-
-          // hide the context menu that's open
-          cmcontainer.className = cssHide;
-          isContextMenuOpen = false;
-        });
-
-        // set icon
-        if (ci.icon) {
-          item.appendChild(ci.icon);
-        }
-
-        item.appendChild(label);
-
-        contextMenuContent.append(item);
-      });
-
-      // get possible offsets
-      const yoffset = allContextMenus.yoffset || 0;
-      const xoffset = allContextMenus.xoffset || 0;
-
-      // display the context menu
-      cmcontainer.innerHTML = "";
-      cmcontainer.append(contextMenuContent);
-      cmcontainer.className = cssShow;
-      cmcontainer.style.top = event.y + yoffset + "px";
-      cmcontainer.style.left = event.x + xoffset + "px";
-      isContextMenuOpen = true;
-
-      // hide the node info box container
-      this.hideNodeInfoBoxContainer(true);
-
-      this.emit("contextMenuOpened", {
-        node,
-        posTop: event.y + yoffset,
-        posLeft: event.x + xoffset,
-        event: event,
-      });
+      mouseCaptor?.on('mousemove', handleMouseMove);
+      mouseCaptor?.on('mouseup', handleMouseUp);
     });
-
-    this.container.addEventListener("click", (event) => {
-      // hide node info box container if open
-      this.hideNodeInfoBoxContainer();
-
-      if (!isContextMenuOpen) return;
-      if (!cmcontainer) return;
-
-      // hide the context menu if open
-      cmcontainer.className = cssHide;
-      isContextMenuOpen = false;
-      this.emit("contextMenuClosed", { contextNode, event: event });
+    this.renderer?.on('leaveNode', (data) => {
+      const handleNextMouseMove = (event: ExtendedMouseEvent) => {
+        this.emit('mouseleave', { node: data.node, event });
+        mouseCaptor?.removeListener('mousemove', handleNextMouseMove);
+      };
+      mouseCaptor?.on('mousemove', handleNextMouseMove);
     });
+    this.renderer?.on('enterNode', (data) => {
+      const handleNextMouseMove = (event: ExtendedMouseEvent) => {
+        this.emit('mouseenter', { node: data.node, event });
+        mouseCaptor?.removeListener('mousemove', handleNextMouseMove);
+      };
+      mouseCaptor?.on('mousemove', handleNextMouseMove);
+    });
+    // ! Sigma.js does not expose other mouse events AFAIK...
   }
 
   /**
@@ -1962,109 +1243,44 @@ class WebGraph extends EventEmitter {
    *
    * @internal
    */
-  private initializeClickAndDragListeners(): void {
+  private initializeNodeDragListeners(): void {
     if (!this.renderer) return;
 
     // used for dragging nodes
     const camera = this.renderer.getCamera();
     const mouseCaptor = this.renderer.getMouseCaptor();
-    let draggedNode: number | undefined;
 
-    // used for the info box on click
-    const delta = 3;
-    let startX: number;
-    let startY: number;
-    let node: string;
-
-    this.renderer.on("downNode", (event) => {
-      // get the position of the click and store the node that has been clicked
-      startX = event.event.x;
-      startY = event.event.y;
-      node = event.node;
-
-      if (this.appMode === AppMode.STATIC || event.event.original.button === 2)
-        return;
-
-      // enabled the dragging
-      this.isNodeDragged = true;
-      draggedNode = event.node;
-      camera.disable();
-      this.emit("dragNode", { node, event: event });
-    });
-
-    mouseCaptor.on("mouseup", (event) => {
-      // calculate the distance of the drag
-      const diffX = Math.abs(event.x - startX);
-      const diffY = Math.abs(event.y - startY);
-
-      // if distance of drag is smaller than delta its a click, not a drag
-      if (
-        (event.original.button === 0 || event.original.button === 1) &&
-        diffX < delta &&
-        diffY < delta
-      ) {
-        this.emit("clickNode", { node, event: event });
-
-        // show infoBoxContainer on click if enabled
-        if (
-          !this.graphData.getNodeAttribute(node, "hidden") &&
-          this.configuration.showNodeInfoBoxOnClick
-        ) {
-          const nodeInfoBox = this.configuration.nodeInfoBox;
-          const nodeInfoBoxContainer = nodeInfoBox?.container;
-
-          if (nodeInfoBox && nodeInfoBoxContainer && node) {
-            const data = this.graphData.getNodeAttributes(node);
-
-            // make the node info box visible
-            this.generateNodeInfoBox(nodeInfoBox, nodeInfoBoxContainer, {
-              key: node,
-              label: data.label,
-              color: data.color,
-              size: data.size,
-              x: event.x,
-              y: event.y,
-              score: data.score,
-              category: data.category,
-            });
-          }
-        }
-      } else if (
-        draggedNode &&
-        (event.original.button === 0 || event.original.button === 1)
-      ) {
-        this.emit("draggedNode", { node, event: event });
-      }
+    this.renderer.on('downNode', ({ node, event }) => {
+      if (event.original.button !== 0) return;
 
       if (this.appMode === AppMode.STATIC) return;
 
-      // disabled the node drag
-      this.isNodeDragged = false;
-      draggedNode = undefined;
-      camera.enable();
-    });
+      camera.disable();
 
-    mouseCaptor.on("mousemove", (e) => {
-      if (
-        !this.renderer ||
-        this.appMode === AppMode.STATIC ||
-        !this.isNodeDragged ||
-        !draggedNode
-      ) {
-        return;
-      }
+      const handleMouseMove = (e: MouseEvent) => {
+        if (!this.renderer) return;
 
-      // get new position of node
-      const normalizationFunction = this.renderer.normalizationFunction;
-      if (normalizationFunction === null) return;
+        // get new position of node
+        const normalizationFunction = this.renderer.normalizationFunction;
+        if (normalizationFunction === null) return;
 
-      const pos = normalizationFunction.inverse(
-        camera.viewportToGraph(this.renderer, e)
-      );
+        const pos = normalizationFunction.inverse(
+          camera.viewportToGraph(this.renderer, e)
+        );
 
-      // set new position of node
-      this.graphData.setNodeAttribute(draggedNode, "x", pos.x);
-      this.graphData.setNodeAttribute(draggedNode, "y", pos.y);
+        // set new position of node
+        this.graphData.setNodeAttribute(node, 'x', pos.x);
+        this.graphData.setNodeAttribute(node, 'y', pos.y);
+      };
+
+      const handleMouseUp = () => {
+        mouseCaptor.removeListener('mousemove', handleMouseMove);
+        mouseCaptor.removeListener('mouseup', handleMouseUp);
+        camera.enable();
+      };
+
+      mouseCaptor.on('mousemove', handleMouseMove);
+      mouseCaptor.on('mouseup', handleMouseUp);
     });
   }
 
@@ -2082,29 +1298,13 @@ class WebGraph extends EventEmitter {
    */
   private initializeHoverHighlightingListeners(): void {
     if (!this.renderer) return;
-    if (!this.configuration.highlightSubGraphOnHover) {
-      // if highlighting the subgraph is disabled add that the node info box container
-      // will be hidden when leaving a node and emit the hover event
-      this.renderer.on("enterNode", ({ node }) => {
-        this.emit("enterNode", { node });
-      });
 
-      this.renderer.on("leaveNode", ({ node }) => {
-        this.hideNodeInfoBoxContainer();
-        this.emit("leaveNode", { node });
-      });
-
-      return;
-    }
-
-    this.renderer.on("enterNode", ({ node }) => {
-      this.emit("enterNode", { node });
-
+    this.renderer.on('enterNode', ({ node }) => {
       this.hoveredNode = node;
 
       if (
         !this.isEdgeRenderingDisabled &&
-        !this.graphData.getNodeAttribute(node, "hidden")
+        !this.graphData.getNodeAttribute(node, 'hidden')
       ) {
         this.highlightSubgraphOfNode(node);
       }
@@ -2115,21 +1315,19 @@ class WebGraph extends EventEmitter {
       this.renderer?.refresh();
     });
 
-    this.renderer.on("leaveNode", ({ node }) => {
-      this.emit("leaveNode", { node });
-
+    this.renderer.on('leaveNode', ({ node }) => {
       this.hoveredNode = undefined;
 
       // reset the zIndex
       if (this.graphData.hasNode(node)) {
         // check that hovered node is still part of the graph
-        this.graphData.setNodeAttribute(node, "z", 0);
+        this.graphData.setNodeAttribute(node, 'z', 0);
       }
       this.highlightedNodes.forEach((node) => {
-        this.graphData.setNodeAttribute(node, "z", 0);
+        this.graphData.setNodeAttribute(node, 'z', 0);
       });
       this.highlightedEdges.forEach((edge) => {
-        this.graphData.setEdgeAttribute(edge, "z", 0);
+        this.graphData.setEdgeAttribute(edge, 'z', 0);
       });
 
       // clear the lists
@@ -2137,9 +1335,6 @@ class WebGraph extends EventEmitter {
       this.highlightedEdges.clear();
 
       this.renderer?.refresh();
-
-      // hide the node info box container if visible
-      this.hideNodeInfoBoxContainer();
     });
   }
 
@@ -2157,20 +1352,20 @@ class WebGraph extends EventEmitter {
       const neighbor = directNeighbors[i];
 
       // skip this neighbor if it is hidden
-      if (this.graphData.getNodeAttribute(neighbor, "hidden")) continue;
+      if (this.graphData.getNodeAttribute(neighbor, 'hidden')) continue;
 
       let isAtLeastOneEdgeVisible = false;
 
       if (this.isJustImportantEdgesEnabled) {
         // add just if at least one edge between both nodes is visible
         this.graphData.edges(node, neighbor).forEach((edge) => {
-          if (this.graphData.getEdgeAttribute(edge, "important") === true) {
+          if (this.graphData.getEdgeAttribute(edge, 'important') === true) {
             this.highlightedEdges.add(edge);
             isAtLeastOneEdgeVisible = true;
           }
         });
         this.graphData.edges(neighbor, node).forEach((edge) => {
-          if (this.graphData.getEdgeAttribute(edge, "important") === true) {
+          if (this.graphData.getEdgeAttribute(edge, 'important') === true) {
             this.highlightedEdges.add(edge);
             isAtLeastOneEdgeVisible = true;
           }
@@ -2224,7 +1419,7 @@ class WebGraph extends EventEmitter {
         edgesOut.forEach((edge) => {
           if (
             this.renderer?.settings.renderJustImportantEdges === true &&
-            this.graphData.getEdgeAttribute(edge, "important") === false
+            this.graphData.getEdgeAttribute(edge, 'important') === false
           ) {
             return;
           }
@@ -2242,7 +1437,7 @@ class WebGraph extends EventEmitter {
           edgesIn.forEach((edge) => {
             if (
               this.renderer?.settings.renderJustImportantEdges === true &&
-              this.graphData.getEdgeAttribute(edge, "important") === false
+              this.graphData.getEdgeAttribute(edge, 'important') === false
             ) {
               return;
             }

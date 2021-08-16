@@ -1,17 +1,17 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 
-import Graph from "graphology";
-import { WebGraph } from "../src";
+import Graph from 'graphology';
+import { WebGraph } from '../src';
 import {
   DEFAULT_GRAPH_CONFIGURATION,
-  Layout,
   NodeType,
-} from "../src/Configuration/index";
-import { IGraphConfiguration } from "../types/Configuration";
-import { WebGLRenderer } from "sigma";
-import { SerializedEdge, SerializedNode } from "graphology-types";
+} from '../src/Configuration/index';
+import { WebGLRenderer } from 'sigma';
+import { SerializedEdge, SerializedNode } from 'graphology-types';
+import { circular, random } from 'graphology-layout';
+import { exportLayoutMapping } from '../src/Utils/internal';
 
-jest.mock("sigma", () => {
+jest.mock('sigma', () => {
   return {
     WebGLRenderer: jest.fn().mockImplementation(() => {
       return {
@@ -67,11 +67,11 @@ jest.mock("sigma", () => {
   };
 });
 
-describe("test public methods of the WebGraph class", () => {
-  describe("constructor", () => {
-    it("should create the same config as no configuration", () => {
-      const container1 = document.createElement("div");
-      const container2 = document.createElement("div");
+describe('test public methods of the WebGraph class', () => {
+  describe('constructor', () => {
+    it('should create the same config as no configuration', () => {
+      const container1 = document.createElement('div');
+      const container2 = document.createElement('div');
 
       const webGraph1 = new WebGraph(container1, new Graph(), {});
       const webGraph2 = new WebGraph(container2, new Graph());
@@ -79,26 +79,24 @@ describe("test public methods of the WebGraph class", () => {
       expect(webGraph1).toStrictEqual(webGraph2);
     });
 
-    it("should be the default configuration", () => {
-      const container = document.createElement("div");
+    it('should be the default configuration', () => {
+      const container = document.createElement('div');
 
       const webGraph = new WebGraph(container, new Graph());
 
-      expect(webGraph["configuration"]).toEqual(DEFAULT_GRAPH_CONFIGURATION);
+      expect(webGraph['configuration']).toEqual(DEFAULT_GRAPH_CONFIGURATION);
     });
 
-    it("should apply configurations correctly", () => {
-      const container = document.createElement("div");
+    it('should apply configurations correctly', () => {
+      const container = document.createElement('div');
 
-      const layout = Layout.RANDOM;
       const includeImportantNeighbors = !DEFAULT_GRAPH_CONFIGURATION.includeImportantNeighbors;
-      const suppressContextMenu = !DEFAULT_GRAPH_CONFIGURATION.suppressContextMenu;
-      const labelFont = "RANDOM FONT";
+      // const suppressContextMenu = !DEFAULT_GRAPH_CONFIGURATION.suppressContextMenu;
+      const labelFont = 'RANDOM FONT';
 
-      const config: Partial<IGraphConfiguration> = {
-        layout: layout,
+      const config = {
         includeImportantNeighbors: includeImportantNeighbors,
-        suppressContextMenu: suppressContextMenu,
+        // suppressContextMenu: suppressContextMenu,
         sigmaSettings: {
           labelFont: labelFont,
         },
@@ -110,41 +108,40 @@ describe("test public methods of the WebGraph class", () => {
       const finalConfig = JSON.parse(
         JSON.stringify(DEFAULT_GRAPH_CONFIGURATION)
       );
-      finalConfig.layout = layout;
       finalConfig.includeImportantNeighbors = includeImportantNeighbors;
-      finalConfig.suppressContextMenu = suppressContextMenu;
+      // finalConfig.suppressContextMenu = suppressContextMenu;
       finalConfig.sigmaSettings.labelFont = labelFont;
 
-      expect(webGraph["configuration"]).toEqual(finalConfig);
+      expect(webGraph['configuration']).toEqual(finalConfig);
     });
   });
 
-  describe("render", () => {
+  describe('render', () => {
     let webGraph: WebGraph;
 
     beforeAll(() => {
-      const container = document.createElement("div");
+      const container = document.createElement('div');
 
       webGraph = new WebGraph(container, new Graph());
     });
 
-    it("should be inactive", () => {
+    it('should be inactive', () => {
       expect(webGraph.isRenderingActive).toBeFalsy();
     });
 
-    it("should be active", () => {
+    it('should be active', () => {
       webGraph.render();
       expect(webGraph.isRenderingActive).toBeTruthy();
     });
 
-    it("should be default AppMode", () => {
+    it('should be default AppMode', () => {
       expect(webGraph.appMode).toEqual(DEFAULT_GRAPH_CONFIGURATION.appMode);
     });
   });
 
-  describe("lifecycle methods", () => {
-    it("should throw error if rendering is active already", () => {
-      const container = document.createElement("div");
+  describe('lifecycle methods', () => {
+    it('should throw error if rendering is active already', () => {
+      const container = document.createElement('div');
 
       const webGraph = new WebGraph(container, new Graph());
       webGraph.render();
@@ -154,29 +151,27 @@ describe("test public methods of the WebGraph class", () => {
       expect(() => webGraph.render()).toThrow();
     });
 
-    it("should call internal methods on render", () => {
-      const container = document.createElement("div");
+    it('should call internal methods on render', () => {
+      const container = document.createElement('div');
 
       const webGraph = new WebGraph(container, new Graph(), {
         enableHistory: true,
       });
-      spyOn<any>(webGraph, "applyLayout");
-      spyOn<any>(webGraph, "overwriteRenderSettings");
-      spyOn<any>(webGraph, "initializeEventHandlers");
+      spyOn<any>(webGraph, 'overwriteRenderSettings');
+      spyOn<any>(webGraph, 'initializeEventHandlers');
 
-      expect(webGraph["history"]).toBeUndefined;
+      expect(webGraph['history']).toBeUndefined;
 
       webGraph.render();
 
       expect(WebGLRenderer).toHaveBeenCalled();
-      expect(webGraph["applyLayout"]).toHaveBeenCalled();
-      expect(webGraph["overwriteRenderSettings"]).toHaveBeenCalled();
-      expect(webGraph["initializeEventHandlers"]).toHaveBeenCalled();
-      expect(webGraph["history"]).toBeDefined();
+      expect(webGraph['overwriteRenderSettings']).toHaveBeenCalled();
+      expect(webGraph['initializeEventHandlers']).toHaveBeenCalled();
+      expect(webGraph['history']).toBeDefined();
     });
 
-    it("should reset everything on destroy", () => {
-      const container = document.createElement("div");
+    it('should reset everything on destroy', () => {
+      const container = document.createElement('div');
 
       const webGraph = new WebGraph(container, new Graph());
       webGraph.render();
@@ -186,19 +181,18 @@ describe("test public methods of the WebGraph class", () => {
       webGraph.destroy();
 
       expect(webGraph.isRenderingActive).toBeFalsy();
-      expect(webGraph["forceAtlas2WebWorker"]).toBeUndefined();
-      expect(webGraph["highlightedNodes"].size).toEqual(0);
-      expect(webGraph["highlightedEdges"].size).toEqual(0);
-      expect(webGraph["hoveredNode"]).toBeUndefined();
-      expect(webGraph["history"]).toBeUndefined();
+      expect(webGraph['highlightedNodes'].size).toEqual(0);
+      expect(webGraph['highlightedEdges'].size).toEqual(0);
+      expect(webGraph['hoveredNode']).toBeUndefined();
+      expect(webGraph['history']).toBeUndefined();
     });
 
-    it("should return exact same graph on export", () => {
-      const container = document.createElement("div");
+    it('should return exact same graph on export', () => {
+      const container = document.createElement('div');
 
-      const n1 = "abc";
-      const n2 = "def";
-      const e = "qwerty";
+      const n1 = 'abc';
+      const n2 = 'def';
+      const e = 'qwerty';
 
       const graph = new Graph();
       graph.addNode(n1);
@@ -218,12 +212,12 @@ describe("test public methods of the WebGraph class", () => {
       });
     });
 
-    it("should exclude edges on export if requested", () => {
-      const container = document.createElement("div");
+    it('should exclude edges on export if requested', () => {
+      const container = document.createElement('div');
 
-      const n1 = "abc";
-      const n2 = "def";
-      const e = "qwerty";
+      const n1 = 'abc';
+      const n2 = 'def';
+      const e = 'qwerty';
 
       const graph = new Graph();
       graph.addNode(n1);
@@ -240,30 +234,30 @@ describe("test public methods of the WebGraph class", () => {
     });
   });
 
-  describe("graph manipulation", () => {
+  describe('graph manipulation', () => {
     let graph: Graph;
     let webGraph: WebGraph;
 
     const testNode1 = {
-      key: "n1",
+      key: 'n1',
     };
 
     const testNode2 = {
-      key: "n2",
+      key: 'n2',
     };
 
     const testNode3 = {
-      key: "n3",
+      key: 'n3',
     };
 
     const testEdge = {
-      key: "testEdge",
-      source: "n1",
-      target: "n2",
+      key: 'testEdge',
+      source: 'n1',
+      target: 'n2',
     };
 
     beforeEach(() => {
-      const container = document.createElement("div");
+      const container = document.createElement('div');
       graph = new Graph();
 
       graph.addNode(testNode1.key);
@@ -275,7 +269,7 @@ describe("test public methods of the WebGraph class", () => {
       webGraph.render();
     });
 
-    it("should overwrite edge attributes/merge edge", () => {
+    it('should overwrite edge attributes/merge edge', () => {
       const edges = new Set<SerializedEdge>();
 
       const edge = {
@@ -283,7 +277,7 @@ describe("test public methods of the WebGraph class", () => {
         source: testEdge.source,
         target: testEdge.target,
         attributes: {
-          abc: "556677abc",
+          abc: '556677abc',
         },
       };
 
@@ -301,7 +295,7 @@ describe("test public methods of the WebGraph class", () => {
       expect(exportedGraphAfter.edges).toHaveLength(1);
     });
 
-    it("should add edge", () => {
+    it('should add edge', () => {
       const edges = new Set<SerializedEdge>();
 
       const edge1 = {
@@ -309,14 +303,14 @@ describe("test public methods of the WebGraph class", () => {
         source: testEdge.source,
         target: testEdge.target,
         attributes: {
-          abc: "556677abc",
+          abc: '556677abc',
         },
       };
 
       const edge2 = {
-        key: "iAnSnEn72",
-        source: "n2",
-        target: "n3",
+        key: 'iAnSnEn72',
+        source: 'n2',
+        target: 'n3',
       };
 
       edges.add(edge1);
@@ -336,19 +330,19 @@ describe("test public methods of the WebGraph class", () => {
       expect(exportedGraphAfter.edges).toHaveLength(2);
     });
 
-    it("should replace edges", () => {
+    it('should replace edges', () => {
       const edges = new Set<SerializedEdge>();
 
       const edge1 = {
-        key: "dU3Js(k9",
-        source: "n2",
-        target: "n1",
+        key: 'dU3Js(k9',
+        source: 'n2',
+        target: 'n1',
       };
 
       const edge2 = {
-        key: "iAnSnEn72",
-        source: "n2",
-        target: "n3",
+        key: 'iAnSnEn72',
+        source: 'n2',
+        target: 'n3',
       };
 
       edges.add(edge1);
@@ -369,13 +363,13 @@ describe("test public methods of the WebGraph class", () => {
       expect(exportedGraphAfter.edges).toHaveLength(2);
     });
 
-    it("should overwrite node attributes/merge node", () => {
+    it('should overwrite node attributes/merge node', () => {
       const nodes = new Array<SerializedNode>();
 
       const node = {
         key: testNode1.key,
         attributes: {
-          abc: "556677abc",
+          abc: '556677abc',
         },
       };
 
@@ -393,13 +387,13 @@ describe("test public methods of the WebGraph class", () => {
       expect(exportedGraphAfter.nodes).toHaveLength(3);
     });
 
-    it("should drop nodes", () => {
+    it('should drop nodes', () => {
       const nodes = new Array<SerializedNode>();
 
       const node = {
-        key: "su3ds9dja",
+        key: 'su3ds9dja',
         attributes: {
-          abc: "3867387643",
+          abc: '3867387643',
         },
       };
 
@@ -424,13 +418,13 @@ describe("test public methods of the WebGraph class", () => {
       expect(exportedGraphAfter.nodes).toHaveLength(1);
     });
 
-    it("should add node", () => {
+    it('should add node', () => {
       const nodes = new Array<SerializedNode>();
 
       const node2 = {
-        key: "su3ds9dja",
+        key: 'su3ds9dja',
         attributes: {
-          abc: "3867387643",
+          abc: '3867387643',
         },
       };
 
@@ -450,32 +444,31 @@ describe("test public methods of the WebGraph class", () => {
     });
   });
 
-  describe("layout and render", () => {
+  describe('layout and render', () => {
     let webGraph: WebGraph;
-    const defaultLayout = Layout.RANDOM;
-    const defaultLayoutConfig = {};
+    let graph: Graph;
     const defaultNodeType = NodeType.RECTANGLE;
 
     beforeEach(() => {
-      const container = document.createElement("div");
-      const graph = new Graph();
+      const container = document.createElement('div');
+      graph = new Graph();
 
       const testNode1 = {
-        key: "n1",
+        key: 'n1',
       };
 
       const testNode2 = {
-        key: "n2",
+        key: 'n2',
       };
 
       const testNode3 = {
-        key: "n3",
+        key: 'n3',
       };
 
       const testEdge = {
-        key: "testEdge",
-        source: "n1",
-        target: "n2",
+        key: 'testEdge',
+        source: 'n1',
+        target: 'n2',
       };
 
       graph.addNode(testNode1.key);
@@ -484,82 +477,26 @@ describe("test public methods of the WebGraph class", () => {
       graph.addEdgeWithKey(testEdge.key, testEdge.source, testEdge.target);
 
       webGraph = new WebGraph(container, graph, {
-        layout: defaultLayout,
-        layoutConfiguration: defaultLayoutConfig,
         defaultNodeType: defaultNodeType,
       });
       webGraph.render();
     });
 
-    it("should set and apply layout", () => {
-      expect(webGraph["configuration"].layout).toEqual(defaultLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        defaultLayoutConfig
-      );
+    it('should set and apply layout', () => {
+      const layout = circular.assign;
+      const controlGraph = graph.copy();
 
-      const newLayout = Layout.CIRCULAR;
-      const newLayoutConfig = { circularLayoutOptions: {} };
+      circular.assign(controlGraph);
 
-      webGraph.setAndApplyLayout(newLayout, newLayoutConfig);
+      webGraph.setAndApplyLayout(layout);
 
-      expect(webGraph["configuration"].layout).toEqual(newLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        newLayoutConfig
+      expect(exportLayoutMapping(controlGraph)).toEqual(
+        exportLayoutMapping(graph)
       );
     });
 
-    it("should reapply layout", () => {
-      expect(webGraph["configuration"].layout).toEqual(defaultLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        defaultLayoutConfig
-      );
-
-      webGraph.reapplyLayout();
-
-      expect(webGraph["configuration"].layout).toEqual(defaultLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        defaultLayoutConfig
-      );
-    });
-
-    it("should reapply layout force atlas 2 and overwrite preAppliedLayout", () => {
-      expect(webGraph["configuration"].layout).toEqual(defaultLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        defaultLayoutConfig
-      );
-
-      const newLayout = Layout.FORCEATLAS2;
-      const newLayoutConfig = {
-        forceAtlas2LayoutOptions: {
-          iterations: 5,
-          preAppliedLayout: Layout.RANDOM,
-        },
-      };
-
-      webGraph.setAndApplyLayout(newLayout, newLayoutConfig);
-
-      expect(webGraph["configuration"].layout).toEqual(newLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        newLayoutConfig
-      );
-
-      webGraph.reapplyLayout();
-
-      const expectedLayoutOptions = {
-        forceAtlas2LayoutOptions: {
-          iterations: 5,
-          preAppliedLayout: undefined,
-        },
-      };
-
-      expect(webGraph["configuration"].layout).toEqual(newLayout);
-      expect(webGraph["configuration"].layoutConfiguration).toEqual(
-        expectedLayoutOptions
-      );
-    });
-
-    it("should set and apply default node type", () => {
-      expect(webGraph["configuration"].defaultNodeType).toEqual(
+    it('should set and apply default node type', () => {
+      expect(webGraph['configuration'].defaultNodeType).toEqual(
         defaultNodeType
       );
 
@@ -567,188 +504,168 @@ describe("test public methods of the WebGraph class", () => {
 
       webGraph.setAndApplyDefaultNodeType(newType);
 
-      expect(webGraph["configuration"].defaultNodeType).toEqual(newType);
+      expect(webGraph['configuration'].defaultNodeType).toEqual(newType);
     });
   });
 
-  describe("history", () => {
-    it("should enable history", () => {
-      const container = document.createElement("div");
+  describe('history', () => {
+    it('should enable history', () => {
+      const container = document.createElement('div');
       const webGraph = new WebGraph(container, new Graph(), {
         enableHistory: true,
       });
       webGraph.render();
 
-      expect(webGraph["isHistoryEnabled"]).toBeTruthy();
-      expect(webGraph["history"]).toBeDefined();
+      expect(webGraph['isHistoryEnabled']).toBeTruthy();
+      expect(webGraph['history']).toBeDefined();
     });
 
-    it("should disabled history", () => {
-      const container = document.createElement("div");
+    it('should disabled history', () => {
+      const container = document.createElement('div');
       const webGraph = new WebGraph(container, new Graph(), {
         enableHistory: false,
       });
       webGraph.render();
 
-      expect(webGraph["isHistoryEnabled"]).toBeFalsy();
-      expect(webGraph["history"]).toBeUndefined();
+      expect(webGraph['isHistoryEnabled']).toBeFalsy();
+      expect(webGraph['history']).toBeUndefined();
     });
 
-    describe("history actions", () => {
+    describe('history actions', () => {
       let webGraph: WebGraph;
+      let graph: Graph;
 
-      const layout = Layout.RANDOM;
-      const layoutConfig = { randomLayoutOptions: {} };
+      const layout = random;
       const nodeType = NodeType.RECTANGLE;
       const nodeTypeTwo = NodeType.CIRCLE;
 
       beforeEach(() => {
-        const container = document.createElement("div");
-        webGraph = new WebGraph(container, new Graph(), {
+        const container = document.createElement('div');
+
+        graph = new Graph();
+
+        graph.addNode('1', {
+          x: 1,
+          y: 1,
+        });
+        graph.addNode('2', {
+          x: -1,
+          y: -1,
+        });
+
+        webGraph = new WebGraph(container, graph, {
           enableHistory: true,
         });
 
         webGraph.render();
 
-        expect(webGraph["isHistoryEnabled"]).toBeTruthy();
-        expect(webGraph["history"]).toBeDefined();
+        expect(webGraph['isHistoryEnabled']).toBeTruthy();
+        expect(webGraph['history']).toBeDefined();
 
-        webGraph.setAndApplyLayout(layout, layoutConfig);
+        webGraph.setAndApplyLayout(layout);
         webGraph.setAndApplyDefaultNodeType(nodeType);
         webGraph.setAndApplyDefaultNodeType(nodeTypeTwo);
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeTypeTwo);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeTypeTwo);
       });
 
-      it("should undo latest action", () => {
+      it('should undo latest action', () => {
+        const oldLayout = exportLayoutMapping(graph);
+
         webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeType);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeType);
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
       });
 
-      it("should undo last two actions", () => {
+      it('should undo last two actions', () => {
+        const oldLayout = exportLayoutMapping(graph);
         webGraph.undo();
         webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(
+        expect(webGraph['configuration'].defaultNodeType).toEqual(
           DEFAULT_GRAPH_CONFIGURATION.defaultNodeType
         );
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
       });
 
-      it("should redo latest undone action", () => {
+      it('should redo latest undone action', () => {
         webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeType);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeType);
 
         webGraph.redo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeTypeTwo);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeTypeTwo);
       });
 
-      it("should undo two then redo one action", () => {
-        webGraph.undo();
-
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeType);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+      it('should undo two then redo one action', () => {
+        const oldLayout = exportLayoutMapping(graph);
 
         webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeType);
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
+
+        webGraph.undo();
+
+        expect(webGraph['configuration'].defaultNodeType).toEqual(
           DEFAULT_GRAPH_CONFIGURATION.defaultNodeType
         );
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
 
         webGraph.redo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeType);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeType);
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
       });
 
-      it("should undo three then redo three actions", () => {
+      it('should undo three then redo three actions', () => {
+        const oldLayout = exportLayoutMapping(graph);
         webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeType);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
-
-        webGraph.undo();
-
-        expect(webGraph["configuration"].defaultNodeType).toEqual(
-          DEFAULT_GRAPH_CONFIGURATION.defaultNodeType
-        );
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeType);
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
 
         webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(
+        expect(webGraph['configuration'].defaultNodeType).toEqual(
           DEFAULT_GRAPH_CONFIGURATION.defaultNodeType
         );
-        expect(webGraph["configuration"].layout).toEqual(
-          DEFAULT_GRAPH_CONFIGURATION.layout
-        );
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          DEFAULT_GRAPH_CONFIGURATION.layoutConfiguration
-        );
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
 
-        webGraph.redo();
+        webGraph.undo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(
+        expect(webGraph['configuration'].defaultNodeType).toEqual(
           DEFAULT_GRAPH_CONFIGURATION.defaultNodeType
         );
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(exportLayoutMapping(graph)).toEqual({
+          '1': {
+            x: 1,
+            y: 1,
+          },
+          '2': {
+            x: -1,
+            y: -1,
+          },
+        });
 
         webGraph.redo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeType);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
+        expect(webGraph['configuration'].defaultNodeType).toEqual(
+          DEFAULT_GRAPH_CONFIGURATION.defaultNodeType
         );
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
 
         webGraph.redo();
 
-        expect(webGraph["configuration"].defaultNodeType).toEqual(nodeTypeTwo);
-        expect(webGraph["configuration"].layout).toEqual(layout);
-        expect(webGraph["configuration"].layoutConfiguration).toEqual(
-          layoutConfig
-        );
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeType);
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
+
+        webGraph.redo();
+
+        expect(webGraph['configuration'].defaultNodeType).toEqual(nodeTypeTwo);
+        expect(exportLayoutMapping(graph)).toEqual(oldLayout);
       });
     });
   });

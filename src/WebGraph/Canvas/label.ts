@@ -1,6 +1,6 @@
-import { PartialButFor } from "sigma/types/utils";
-import { WebGLSettings } from "sigma/types/renderers/webgl/settings";
-import { NodeAttributes } from "sigma/types/types";
+import { PartialButFor } from 'sigma/types/utils';
+import { WebGLSettings } from 'sigma/types/renderers/webgl/settings';
+import { NodeAttributes } from 'sigma/types/types';
 
 /**
  * Renders the label of a node.
@@ -14,7 +14,7 @@ import { NodeAttributes } from "sigma/types/types";
  */
 function drawLabel(
   context: CanvasRenderingContext2D,
-  data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "label" | "color">,
+  data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'label' | 'color'>,
   settings: WebGLSettings
 ): void {
   const size = settings.labelSize;

@@ -1,32 +1,32 @@
-const path = require("path");
+const path = require('path');
 
 const basePath = path.resolve(__dirname);
 
 const PATHS = {
-  src: basePath + "/src",
-  demo: basePath + "/demo",
+  src: basePath + '/src',
+  demo: basePath + '/demo',
 };
 
 module.exports = {
-  mode: "development",
-  entry: PATHS.demo + "/demo.ts",
+  mode: 'development',
+  entry: PATHS.demo + '/demo.ts',
   module: {
     rules: [
       {
         test: /\.ts$/,
-        loader: "ts-loader",
+        loader: 'ts-loader',
       },
       {
         test: /\.glsl$/,
-        loader: "raw-loader",
+        loader: 'raw-loader',
       },
     ],
   },
   resolve: {
-    extensions: [".ts", ".js", ".glsl"],
+    extensions: ['.ts', '.js', '.glsl'],
   },
   output: {
-    filename: "demo.js",
+    filename: 'demo.js',
     path: PATHS.demo,
   },
   devServer: {

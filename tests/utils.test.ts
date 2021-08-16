@@ -1,8 +1,8 @@
-import { InternalUtils, Utils } from "../src/Utils/index";
+import { InternalUtils, Utils } from '../src/Utils/index';
 
-describe("test external util functions", () => {
-  describe("getNodeSizeForValue", () => {
-    it("should return same sizes", () => {
+describe('test external util functions', () => {
+  describe('getNodeSizeForValue', () => {
+    it('should return same sizes', () => {
       const score1 = 15;
       const score2 = 17;
       const score3 = 20;
@@ -47,7 +47,7 @@ describe("test external util functions", () => {
       expect(res3).toEqual(maxSize);
     });
 
-    it("should return different sizes", () => {
+    it('should return different sizes', () => {
       const score1 = 5;
       const score2 = 10;
       const score3 = 15;
@@ -95,10 +95,10 @@ describe("test external util functions", () => {
     });
   });
 
-  describe("getNodeColorForValue", () => {
-    const colors = ["#291627", "#292718", "#291027"];
+  describe('getNodeColorForValue', () => {
+    const colors = ['#291627', '#292718', '#291027'];
 
-    it("should return same color", () => {
+    it('should return same color', () => {
       const val1 = 2009;
       const val2 = 2010;
       const minVal = 1990;
@@ -111,7 +111,7 @@ describe("test external util functions", () => {
       expect(res1).toEqual(colors[2]);
     });
 
-    it("should return different colors", () => {
+    it('should return different colors', () => {
       const val1 = 2009;
       const val2 = 2010;
       const val3 = 1991;
@@ -131,50 +131,50 @@ describe("test external util functions", () => {
   });
 });
 
-describe("test internal util functions", () => {
+describe('test internal util functions', () => {
   const params = {
-    visibleNodes: ["n1", "n2", "n3", "n4"],
+    visibleNodes: ['n1', 'n2', 'n3', 'n4'],
     cache: {
       n1: {
-        color: "#BBBDF6",
+        color: '#BBBDF6',
         hidden: false,
         important: false,
-        label: "abc, 2018",
+        label: 'abc, 2018',
         size: 10,
-        type: "",
+        type: '',
         x: 0.1,
         y: 0.2,
         cluster: 0,
       },
       n2: {
-        color: "#DF6BBB",
+        color: '#DF6BBB',
         hidden: false,
         important: true,
-        label: "def, 2017",
+        label: 'def, 2017',
         size: 8,
-        type: "",
+        type: '',
         x: 0.3,
         y: 0.4,
         cluster: 1,
       },
       n3: {
-        color: "#BDFBB6",
+        color: '#BDFBB6',
         hidden: false,
         important: true,
-        label: "ghi, 2016",
+        label: 'ghi, 2016',
         size: 8,
-        type: "",
+        type: '',
         x: 0.5,
         y: 0.6,
         cluster: 2,
       },
       n4: {
-        color: "#BF6BBD",
+        color: '#BF6BBD',
         hidden: false,
         important: false,
-        label: "jkl, 2015",
+        label: 'jkl, 2015',
         size: 6,
-        type: "",
+        type: '',
         x: 0.7,
         y: 0.8,
         cluster: 3,
@@ -182,13 +182,13 @@ describe("test internal util functions", () => {
     },
   };
 
-  it("should return all", () => {
+  it('should return all', () => {
     expect(InternalUtils.labelSelectorAll(params)).toHaveLength(
       params.visibleNodes.length
     );
   });
 
-  it("should return only important", () => {
+  it('should return only important', () => {
     expect(InternalUtils.labelSelectorImportant(params)).toHaveLength(2);
   });
 });

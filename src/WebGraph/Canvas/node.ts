@@ -1,6 +1,6 @@
-import { PartialButFor } from "sigma/types/utils";
-import { NodeAttributes } from "sigma/types/types";
-import { IGraphConfiguration, NodeType } from "../../Configuration";
+import { PartialButFor } from 'sigma/types/utils';
+import { NodeAttributes } from 'sigma/types/types';
+import { IGraphConfiguration, NodeType } from '../../Configuration';
 
 const PI_TIMES_2 = Math.PI * 2;
 
@@ -13,7 +13,7 @@ const PI_TIMES_2 = Math.PI * 2;
  */
 function drawNode(
   context: CanvasRenderingContext2D,
-  data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "color">,
+  data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'color'>,
   config: IGraphConfiguration
 ): void {
   const type: NodeType = <NodeType>data.type ?? config.defaultNodeType;
@@ -36,7 +36,7 @@ function drawNode(
 
 function drawCircle(
   context: CanvasRenderingContext2D,
-  data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "color">
+  data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'color'>
 ): void {
   context.fillStyle = data.color;
   context.beginPath();
@@ -47,7 +47,7 @@ function drawCircle(
 
 function drawRing(
   context: CanvasRenderingContext2D,
-  data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "color">
+  data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'color'>
 ): void {
   context.fillStyle = data.color;
 
@@ -57,7 +57,7 @@ function drawRing(
   context.fill();
 
   context.beginPath();
-  context.fillStyle = "#FFFFFF";
+  context.fillStyle = '#FFFFFF';
   context.arc(data.x, data.y, data.size / 2, 0, PI_TIMES_2, true);
   context.closePath();
   context.fill();
@@ -65,7 +65,7 @@ function drawRing(
 
 function drawRectangle(
   context: CanvasRenderingContext2D,
-  data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "color">
+  data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'color'>
 ): void {
   context.fillStyle = data.color;
 
@@ -79,7 +79,7 @@ function drawRectangle(
 
 function drawTriangle(
   context: CanvasRenderingContext2D,
-  data: PartialButFor<NodeAttributes, "x" | "y" | "size" | "color">
+  data: PartialButFor<NodeAttributes, 'x' | 'y' | 'size' | 'color'>
 ): void {
   context.fillStyle = data.color;
 
