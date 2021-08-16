@@ -1200,9 +1200,7 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
   private initializeEmittingListeners(): void {
     const mouseCaptor = this.renderer?.getMouseCaptor();
 
-    this.renderer?.on('rightClickNode', (data) =>
-      this.emit('click', data)
-    );
+    this.renderer?.on('rightClickNode', (data) => this.emit('click', data));
     this.renderer?.on('clickNode', (data) => this.emit('click', data));
     this.renderer?.on('downNode', ({ node, event }) => {
       this.emit('mousedown', { node, event });
