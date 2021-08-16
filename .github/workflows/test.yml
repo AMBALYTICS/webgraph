@@ -1,9 +1,9 @@
 name: Test
-
 on:
-  pull_request:
-    branches: [master]
-
+  push:
+    branches:
+      - master
+      - next
 jobs:
   test:
     name: Test on node ${{ matrix.node_version }}
