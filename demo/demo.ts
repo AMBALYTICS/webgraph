@@ -6,7 +6,7 @@ import {
   AppMode,
   NodeType,
   LabelSelector,
-} from '../src/index';
+} from '../src';
 import { SerializedEdge, SerializedNode } from 'graphology-types';
 import Graph, { MultiGraph } from 'graphology';
 import { circlepack, circular, random } from 'graphology-layout';
