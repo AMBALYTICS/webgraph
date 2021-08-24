@@ -483,13 +483,13 @@ describe('test public methods of the WebGraph class', () => {
       webGraph.render();
     });
 
-    it('should set and apply layout', () => {
+    it('should set and apply layout', async () => {
       const layout = circular.assign;
       const controlGraph = graph.copy();
 
       circular.assign(controlGraph);
 
-      webGraph.setAndApplyLayout(layout);
+      await webGraph.setAndApplyLayout(layout);
 
       expect(exportLayoutMapping(controlGraph)).toEqual(
         exportLayoutMapping(graph)
@@ -540,7 +540,7 @@ describe('test public methods of the WebGraph class', () => {
       const nodeType = NodeType.RECTANGLE;
       const nodeTypeTwo = NodeType.CIRCLE;
 
-      beforeEach(() => {
+      beforeEach(async () => {
         const container = document.createElement('div');
 
         graph = new Graph();
@@ -563,7 +563,7 @@ describe('test public methods of the WebGraph class', () => {
         expect(webGraph['isHistoryEnabled']).toBeTruthy();
         expect(webGraph['history']).toBeDefined();
 
-        webGraph.setAndApplyLayout(layout);
+        await webGraph.setAndApplyLayout(layout);
         webGraph.setAndApplyDefaultNodeType(nodeType);
         webGraph.setAndApplyDefaultNodeType(nodeTypeTwo);
 

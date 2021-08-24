@@ -51,7 +51,7 @@ export type LayoutOptions = any; // ? Is there a more specific type??
 export type Layout = (
   graph: Graph,
   options?: LayoutOptions
-) => void | LayoutMapping;
+) => void | LayoutMapping | Promise<void | LayoutMapping>;
 
 export * from './appmode';
 export * from './nodetype';
