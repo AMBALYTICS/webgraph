@@ -242,8 +242,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    *
    * @public
    */
-  public mergeEdges(edges: Set<SerializedEdge>, addToHistory = true): boolean {
-    if (edges.size <= 0) return false;
+  public mergeEdges(edges: Set<SerializedEdge>, addToHistory = true) {
+    if (edges.size <= 0) return;
 
     const existingEdges = new Set<SerializedEdge>();
 
@@ -288,8 +288,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
         }
       );
     }
-
-    return true;
   }
 
   /**
@@ -303,10 +301,7 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    *
    * @public
    */
-  public replaceEdges(
-    edges: Set<SerializedEdge>,
-    addToHistory = true
-  ): boolean {
+  public replaceEdges(edges: Set<SerializedEdge>, addToHistory = true) {
     if (this.isHistoryEnabled && addToHistory) {
       const existingEdges = new Set<SerializedEdge>();
 
@@ -332,7 +327,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
 
     this.graphData.clearEdges();
     this.mergeEdges(edges, false);
-    return true;
   }
 
   /**
@@ -415,11 +409,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    *
    * @public
    */
-  public mergeNodes(
-    nodes: Array<SerializedNode>,
-    addToHistory = true
-  ): boolean {
-    if (nodes.length <= 0) return false;
+  public mergeNodes(nodes: Array<SerializedNode>, addToHistory = true) {
+    if (nodes.length <= 0) return;
 
     const existingNodes = new Array<SerializedNode>();
 
@@ -463,8 +454,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
         });
       });
     }
-
-    return true;
   }
 
   /**
@@ -480,7 +469,7 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
   public dropNodes(
     nodes: Array<NodeKey | SerializedNode>,
     addToHistory = true
-  ): boolean {
+  ) {
     const edgeSetForHistory: Set<SerializedEdge> = new Set<SerializedEdge>();
     const nodeArrayForHistory: Array<SerializedNode> =
       new Array<SerializedNode>();
@@ -540,8 +529,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
 
     // refresh
     this.renderer?.refresh();
-
-    return true;
   }
 
   /**
@@ -616,11 +603,8 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    *
    * @public
    */
-  public setAndApplyDefaultNodeType(
-    nodeType: NodeType,
-    addToHistory = true
-  ): boolean {
-    if (!this.renderer) return false;
+  public setAndApplyDefaultNodeType(nodeType: NodeType, addToHistory = true) {
+    if (!this.renderer) return;
 
     const oldNodeType = this.configuration.defaultNodeType;
     this.configuration.defaultNodeType = nodeType;
@@ -637,8 +621,6 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
         { nodeType: nodeType }
       );
     }
-
-    return true;
   }
 
   /**
@@ -656,7 +638,7 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
   public toggleNodeBackdropRendering(
     colors?: Record<number, string>,
     manuallyEnOrDisable?: boolean
-  ): boolean {
+  ) {
     if (!this.renderer || !this.isRenderingActive) {
       throw new Error(
         "Can't enable node backdrop rendering when renderer is inactive. Use the configuration of the constructor to do so."
@@ -672,7 +654,7 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
       this.renderer.settings.renderNodeBackdrop = manuallyEnOrDisable;
       this.configuration.sigmaSettings.renderNodeBackdrop = manuallyEnOrDisable;
       this.isNodeBackdropRenderingEnabled = manuallyEnOrDisable;
-      return true;
+      return;
     }
 
     this.isNodeBackdropRenderingEnabled = !this.isNodeBackdropRenderingEnabled;
@@ -684,7 +666,7 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
     this.renderer.needToProcess = true;
     this.renderer.scheduleRender();
 
-    return true;
+    return;
   }
 
   /**
@@ -901,11 +883,9 @@ class WebGraph extends (EventEmitter as new () => TypedEmitter<MessageEvents>) {
    *
    * @returns true if history has been successfully cleared, false if not
    */
-  public clearHistory(): boolean {
+  public clearHistory() {
     this.history = undefined;
     this.history = new HistoryManager();
-
-    return true;
   }
 
   /**
