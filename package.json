@@ -43,7 +43,7 @@
   "dependencies": {
     "events": "^3.3.0",
     "graphology": "^0.20.0",
-    "graphology-utils": "^2.1.1",
+    "graphology-utils": "^2.3.0",
     "sigma": "github:robinerol/sigma.js#v2"
   },
   "devDependencies": {
